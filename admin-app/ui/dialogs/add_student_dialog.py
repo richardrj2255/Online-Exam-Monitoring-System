@@ -15,19 +15,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
 from models.student_model import StudentModel
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
-    BADGE_INFO_BORDER,
-)
 
 
 class AddStudentDialog(QDialog):
@@ -43,7 +30,7 @@ class AddStudentDialog(QDialog):
         else:
             self.setWindowTitle("Register New Examinee")
 
-        self.setFixedSize(480, 620)
+        self.setFixedSize(500, 640)
 
         self.setup_ui()
 
@@ -54,7 +41,7 @@ class AddStudentDialog(QDialog):
 
     def setup_ui(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS}; color: {TEXT_PRIMARY};")
+        self.setObjectName("pageWidget")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(28, 28, 28, 28)
@@ -62,28 +49,22 @@ class AddStudentDialog(QDialog):
 
         # Card Container
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 12px;
-            }}
-        """)
+        card.setObjectName("card")
         cardLayout = QVBoxLayout(card)
-        cardLayout.setContentsMargins(20, 20, 20, 20)
-        cardLayout.setSpacing(10)
+        cardLayout.setContentsMargins(22, 22, 22, 22)
+        cardLayout.setSpacing(12)
 
         if self.student:
             title = QLabel("✏ Edit Examinee Profile")
         else:
             title = QLabel("👨‍🎓 Register New Examinee")
 
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: 700; background: transparent; border: none;")
         cardLayout.addWidget(title)
 
         subtitle = QLabel("Examinee demographic information and photo biometric identification.")
-        subtitle.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; background: transparent; border: none; margin-bottom: 6px;")
+        subtitle.setObjectName("pageSubtitle")
         cardLayout.addWidget(subtitle)
 
         self.reg = QLineEdit()
@@ -105,42 +86,23 @@ class AddStudentDialog(QDialog):
         self.seat.setPlaceholderText("Seat Number")
 
         for field in [self.reg, self.name, self.dept, self.sem, self.hall, self.seat]:
-            field.setMinimumHeight(36)
+            field.setMinimumHeight(40)
             cardLayout.addWidget(field)
 
         # Photo row
         photoFrame = QFrame()
-        photoFrame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CANVAS};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-            }}
-        """)
+        photoFrame.setObjectName("card")
         photoLayout = QHBoxLayout(photoFrame)
-        photoLayout.setContentsMargins(10, 8, 10, 8)
+        photoLayout.setContentsMargins(12, 10, 12, 10)
         photoLayout.setSpacing(10)
 
         self.photoLabel = QLabel("No Biometric Photo Enrolled")
-        self.photoLabel.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 11px; background: transparent; border: none;")
+        self.photoLabel.setObjectName("pageSubtitle")
 
         browse = QPushButton("📷 Choose Photo")
-        browse.setMinimumHeight(30)
-        browse.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BADGE_INFO_BG};
-                color: {BADGE_INFO_TEXT};
-                border: 1px solid {BADGE_INFO_BORDER};
-                border-radius: 6px;
-                padding: 4px 12px;
-                font-size: 11px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        browse.setObjectName("secondaryBtn")
+        browse.setCursor(Qt.PointingHandCursor)
+        browse.setMinimumHeight(34)
         browse.clicked.connect(self.choose_photo)
 
         photoLayout.addWidget(self.photoLabel, 1)
@@ -155,19 +117,9 @@ class AddStudentDialog(QDialog):
         else:
             self.saveBtn = QPushButton("Save & Enroll Examinee")
 
-        self.saveBtn.setMinimumHeight(42)
-        self.saveBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: 700;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        self.saveBtn.setCursor(Qt.PointingHandCursor)
+        self.saveBtn.setMinimumHeight(44)
+        self.saveBtn.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self.saveBtn.clicked.connect(self.save_student)
 
         layout.addWidget(self.saveBtn)
@@ -178,15 +130,15 @@ class AddStudentDialog(QDialog):
     def load_student(self):
 
         self.reg.setText(self.student["register_no"])
-        self.reg.setEnabled(False)
+        self.reg.setReadOnly(True)
 
         self.name.setText(self.student["name"])
         self.dept.setText(self.student["department"])
-        self.sem.setText(self.student["semester"])
-        self.hall.setText(self.student["hall"])
-        self.seat.setText(self.student["seat"])
+        self.sem.setText(str(self.student["semester"]))
+        self.hall.setText(str(self.student["hall"]))
+        self.seat.setText(str(self.student["seat"]))
 
-        self.photo_path = self.student["photo"] if self.student["photo"] else ""
+        self.photo_path = self.student["photo"]
 
         if self.photo_path:
             self.photoLabel.setText(os.path.basename(self.photo_path))
@@ -195,50 +147,50 @@ class AddStudentDialog(QDialog):
 
     def choose_photo(self):
 
-        filename, _ = QFileDialog.getOpenFileName(
+        file_name, _ = QFileDialog.getOpenFileName(
             self,
-            "Choose Photo",
+            "Select Student Photo",
             "",
             "Images (*.png *.jpg *.jpeg)"
         )
 
-        if filename:
-            self.photo_path = filename
-            self.photoLabel.setText(os.path.basename(filename))
+        if file_name:
+            self.photo_path = file_name
+            self.photoLabel.setText(os.path.basename(file_name))
 
     ##########################################################
 
     def save_student(self):
 
-        if (
-            self.reg.text().strip() == "" or
-            self.name.text().strip() == "" or
-            self.dept.text().strip() == "" or
-            self.sem.text().strip() == "" or
-            self.hall.text().strip() == "" or
-            self.seat.text().strip() == ""
-        ):
+        register_no = self.reg.text().strip()
+        name = self.name.text().strip()
+        department = self.dept.text().strip()
+        semester = self.sem.text().strip()
+        hall = self.hall.text().strip()
+        seat = self.seat.text().strip()
+
+        if not register_no or not name:
 
             QMessageBox.warning(
                 self,
                 "Validation Error",
-                "Please fill all examinee details."
+                "Register Number and Student Name are mandatory fields."
             )
             return
 
-        ##################################################
+        # -----------------------------------------------------
         # EDIT MODE
-        ##################################################
+        # -----------------------------------------------------
 
         if self.student:
 
             success = StudentModel.update_student(
-                self.reg.text().strip(),
-                self.name.text().strip(),
-                self.dept.text().strip(),
-                self.sem.text().strip(),
-                self.hall.text().strip(),
-                self.seat.text().strip(),
+                register_no,
+                name,
+                department,
+                semester,
+                hall,
+                seat,
                 self.photo_path
             )
 
@@ -246,42 +198,42 @@ class AddStudentDialog(QDialog):
                 QMessageBox.information(
                     self,
                     "Success",
-                    "Student updated successfully."
+                    "Examinee profile updated successfully."
                 )
                 self.accept()
             else:
                 QMessageBox.warning(
                     self,
                     "Error",
-                    "Unable to update student."
+                    "Failed to update examinee profile."
                 )
 
-            return
+        # -----------------------------------------------------
+        # INSERT MODE
+        # -----------------------------------------------------
 
-        ##################################################
-        # ADD MODE
-        ##################################################
-
-        success = StudentModel.add_student(
-            self.reg.text().strip(),
-            self.name.text().strip(),
-            self.dept.text().strip(),
-            self.sem.text().strip(),
-            self.hall.text().strip(),
-            self.seat.text().strip(),
-            self.photo_path
-        )
-
-        if success:
-            QMessageBox.information(
-                self,
-                "Success",
-                "Student added successfully."
-            )
-            self.accept()
         else:
-            QMessageBox.warning(
-                self,
-                "Registration Error",
-                "Register Number already exists in database."
+
+            success = StudentModel.add_student(
+                register_no,
+                name,
+                department,
+                semester,
+                hall,
+                seat,
+                self.photo_path
             )
+
+            if success:
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    "New examinee registered successfully."
+                )
+                self.accept()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "Examinee with this Register Number already exists."
+                )

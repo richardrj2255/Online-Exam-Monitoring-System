@@ -1,250 +1,51 @@
 /* =====================================================================
-   Online Exam Monitoring System - Modern Dark Mode QSS Stylesheet
-   Color Palette: Deep Slate (#0F172A), Slate Cards (#1E293B), Indigo (#6366F1)
+   Online Exam Monitoring System - Modern Dual-Theme Design System
+   Reference: AI Online Exam Management Dashboard
+   Themes: Light (Default) and Dark (Executive Mode)
+   Managed dynamically via ui/theme_manager.py
    ===================================================================== */
 
-QMainWindow, QDialog, QWidget {
-    background-color: #0F172A;
-    color: #F8FAFC;
+/* Light Theme Tokens */
+/*
+   Main Background Canvas: Soft Off-White (#F8FAFC)
+   Card Containers & Panels: Pure White (#FFFFFF), 1px solid #E2E8F0, hover: #818CF8
+   Primary Accent: Deep Indigo / Royal Blue (#4F46E5 / #4338CA)
+   Headings & Body: #0F172A, Secondary: #64748B, Muted: #94A3B8
+   Status Badges: Normal (#DCFCE7 bg, #15803D text), Alert (#FFE4E6 bg, #BE123C text)
+*/
+
+/* Dark Theme Tokens */
+/*
+   Main Background Canvas: Deep Slate (#0F172A)
+   Card Containers & Panels: #1E293B, 1px solid #334155, hover: #818CF8
+   Primary Accent: Vibrant Indigo (#6366F1 / #4F46E5)
+   Headings & Body: #F8FAFC, Secondary: #94A3B8, Muted: #64748B
+   Status Badges: Normal (#064E3B bg, #34D399 text), Alert (#881337 bg, #FDA4AF text)
+*/
+
+QMainWindow, QDialog, QWidget#centralWidget, QWidget#pageWidget, QWidget#rootWidget {
     font-family: "Segoe UI", "Inter", "Roboto", -apple-system, sans-serif;
     font-size: 13px;
 }
 
 QFrame#card, QFrame.card, QGroupBox {
-    background-color: #1E293B;
-    border: 1px solid #334155;
     border-radius: 12px;
     padding: 16px;
-    margin-top: 10px;
-}
-
-QGroupBox {
-    font-weight: bold;
-    font-size: 14px;
-    color: #F8FAFC;
-}
-
-QGroupBox::title {
-    subcontrol-origin: margin;
-    subcontrol-position: top left;
-    padding: 0 8px;
-    color: #6366F1;
-}
-
-QLabel {
-    color: #F8FAFC;
-    background: transparent;
 }
 
 QPushButton {
-    background-color: #6366F1;
-    color: #FFFFFF;
-    border: 1px solid transparent;
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 9px 18px;
     font-weight: 600;
     font-size: 13px;
 }
 
-QPushButton:hover {
-    background-color: #4F46E5;
-}
-
-QPushButton:pressed {
-    background-color: #4338CA;
-}
-
-QPushButton:disabled {
-    background-color: #1E293B;
-    color: #64748B;
-    border: 1px solid #334155;
-}
-
-QPushButton#secondaryBtn, QPushButton.secondary {
-    background-color: #1E293B;
-    color: #F8FAFC;
-    border: 1px solid #334155;
-}
-
-QPushButton#secondaryBtn:hover, QPushButton.secondary:hover {
-    background-color: #243248;
-    border-color: #475569;
-}
-
-QPushButton#dangerBtn, QPushButton.danger {
-    background-color: #881337;
-    color: #FDA4AF;
-    border: 1px solid #E11D48;
-}
-
-QPushButton#dangerBtn:hover, QPushButton.danger:hover {
-    background-color: #9F1239;
-    color: #FFFFFF;
-}
-
-QPushButton#successBtn, QPushButton.success {
-    background-color: #064E3B;
-    color: #34D399;
-    border: 1px solid #059669;
-}
-
-QPushButton#successBtn:hover, QPushButton.success:hover {
-    background-color: #065F46;
-    color: #FFFFFF;
-}
-
-QLineEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-    background-color: #0F172A;
-    color: #F8FAFC;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 8px 12px;
-    selection-background-color: #6366F1;
-    selection-color: #FFFFFF;
-    font-size: 13px;
-}
-
-QLineEdit:focus, QTextEdit:focus, QSpinBox:focus, QDoubleSpinBox:focus, QComboBox:focus {
-    border: 1px solid #6366F1;
-    background-color: #111C2E;
-}
-
-QLineEdit::placeholder, QTextEdit::placeholder {
-    color: #64748B;
-}
-
-QComboBox {
-    padding-right: 24px;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 28px;
-    border-left: 1px solid #334155;
-    border-top-right-radius: 8px;
-    border-bottom-right-radius: 8px;
-    background: #1E293B;
-}
-
-QComboBox::down-arrow {
-    image: none;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid #94A3B8;
-    width: 0;
-    height: 0;
-    margin: 0 auto;
-}
-
-QComboBox QAbstractItemView {
-    background-color: #1E293B;
-    color: #F8FAFC;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 4px;
-    selection-background-color: #6366F1;
-    selection-color: #FFFFFF;
-    outline: none;
-}
-
 QTableWidget, QTableView {
-    background-color: #1E293B;
-    alternate-background-color: #162032;
-    color: #F8FAFC;
-    border: 1px solid #334155;
     border-radius: 10px;
-    gridline-color: #273549;
-    selection-background-color: #312E81;
-    selection-color: #FFFFFF;
+    font-size: 13px;
     outline: none;
 }
 
 QTableWidget::item {
-    padding: 8px 12px;
-    border-bottom: 1px solid #243248;
-}
-
-QTableWidget::item:selected {
-    background-color: #312E81;
-    color: #FFFFFF;
-}
-
-QTableWidget::item:hover {
-    background-color: #243248;
-}
-
-QHeaderView::section {
-    background-color: #0F172A;
-    color: #94A3B8;
-    padding: 10px 12px;
-    border: none;
-    border-bottom: 1px solid #334155;
-    font-weight: 700;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-QScrollBar:vertical {
-    background: #0F172A;
-    width: 8px;
-    margin: 0;
-    border-radius: 4px;
-}
-
-QScrollBar::handle:vertical {
-    background: #334155;
-    min-height: 24px;
-    border-radius: 4px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background: #6366F1;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0;
-    background: transparent;
-}
-
-QScrollBar:horizontal {
-    background: #0F172A;
-    height: 8px;
-    margin: 0;
-    border-radius: 4px;
-}
-
-QScrollBar::handle:horizontal {
-    background: #334155;
-    min-width: 24px;
-    border-radius: 4px;
-}
-
-QScrollBar::handle:horizontal:hover {
-    background: #6366F1;
-}
-
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    width: 0;
-    background: transparent;
-}
-
-QScrollArea {
-    border: none;
-    background-color: transparent;
-}
-
-QScrollArea > QWidget > QWidget {
-    background-color: transparent;
-}
-
-QMessageBox {
-    background-color: #1E293B;
-    border: 1px solid #334155;
-}
-
-QMessageBox QLabel {
-    color: #F8FAFC;
-    font-size: 13px;
+    padding: 9px 12px;
 }

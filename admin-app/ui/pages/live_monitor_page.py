@@ -25,23 +25,9 @@ from PyQt5.QtCore import (
 
 from streaming.camera_server import CameraServer
 from database.database import get_connection
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_SUCCESS_BG,
-    BADGE_SUCCESS_TEXT,
-    BADGE_SUCCESS_BORDER,
-    BADGE_DANGER_BG,
-    BADGE_DANGER_TEXT,
-    BADGE_DANGER_BORDER,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
+from ui.theme_manager import (
+    get_theme_palette,
+    register_theme_listener,
 )
 
 
@@ -73,43 +59,37 @@ class StudentCameraCard(QFrame):
         self.register_no = register_no
         self.student_name = student_name
         self.subject = subject
+        self.is_disconnected = False
 
+        self.setObjectName("cameraCard")
         self.setMinimumSize(
             440,
             380
         )
-
-        self.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
 
         layout = QVBoxLayout()
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
         # =================================================
-        # STUDENT HEADER (Glassmorphic Ribbon)
+        # STUDENT HEADER (Interactive Top Status Bar Overlay)
         # =================================================
 
-        headerLayout = QHBoxLayout()
+        self.topStatusBar = QFrame()
+        self.topStatusBar.setObjectName("topStatusBar")
+        self.topStatusBar.setStyleSheet("background: transparent; border: none;")
+
+        headerLayout = QHBoxLayout(self.topStatusBar)
+        headerLayout.setContentsMargins(0, 0, 0, 0)
         headerLayout.setSpacing(12)
 
         # -------------------------------------------------
         # Student Avatar + Info
         # -------------------------------------------------
-        avatar = QLabel("👨‍🎓")
-        avatar.setAlignment(Qt.AlignCenter)
-        avatar.setFixedSize(36, 36)
-        avatar.setStyleSheet(f"""
-            background-color: {BG_CANVAS};
-            border: 1px solid {BORDER_SUBTLE};
-            border-radius: 18px;
-            font-size: 16px;
-        """)
+        self.avatar = QLabel("👨‍🎓")
+        self.avatar.setAlignment(Qt.AlignCenter)
+        self.avatar.setFixedSize(38, 38)
+        self.avatar.setFont(QFont("Segoe UI Emoji", 16))
 
         studentInfoLayout = QVBoxLayout()
         studentInfoLayout.setSpacing(2)
@@ -118,15 +98,9 @@ class StudentCameraCard(QFrame):
             self.student_name
         )
         self.studentLabel.setFont(
-            QFont("Segoe UI", 12, QFont.Bold)
+            QFont("Segoe UI", 13, QFont.Bold)
         )
-        self.studentLabel.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 13px;
-            font-weight: 700;
-            background: transparent;
-            border: none;
-        """)
+        self.studentLabel.setStyleSheet("font-size: 14px; font-weight: 700; background: transparent; border: none;")
 
         subRow = QHBoxLayout()
         subRow.setSpacing(8)
@@ -134,24 +108,12 @@ class StudentCameraCard(QFrame):
         self.registerLabel = QLabel(
             f"ID: {self.register_no}"
         )
-        self.registerLabel.setStyleSheet(f"""
-            color: {TEXT_MUTED};
-            font-size: 11px;
-            font-weight: 600;
-            background: transparent;
-            border: none;
-        """)
+        self.registerLabel.setStyleSheet("font-size: 12px; font-weight: 600; background: transparent; border: none;")
 
         self.subjectLabel = QLabel(
             f"📚 {self.subject}"
         )
-        self.subjectLabel.setStyleSheet(f"""
-            color: {BADGE_INFO_TEXT};
-            font-size: 11px;
-            font-weight: 600;
-            background: transparent;
-            border: none;
-        """)
+        self.subjectLabel.setStyleSheet("font-size: 12px; font-weight: 600; background: transparent; border: none;")
 
         subRow.addWidget(self.registerLabel)
         subRow.addWidget(self.subjectLabel)
@@ -159,7 +121,7 @@ class StudentCameraCard(QFrame):
         studentInfoLayout.addWidget(self.studentLabel)
         studentInfoLayout.addLayout(subRow)
 
-        headerLayout.addWidget(avatar)
+        headerLayout.addWidget(self.avatar)
         headerLayout.addLayout(studentInfoLayout)
         headerLayout.addStretch()
 
@@ -172,21 +134,9 @@ class StudentCameraCard(QFrame):
         self.statusLabel.setFont(
             QFont("Segoe UI", 10, QFont.Bold)
         )
-        self.statusLabel.setStyleSheet(f"""
-            QLabel {{
-                background-color: {BADGE_SUCCESS_BG};
-                color: {BADGE_SUCCESS_TEXT};
-                border: 1px solid {BADGE_SUCCESS_BORDER};
-                border-radius: 12px;
-                padding: 4px 10px;
-                font-size: 10px;
-                font-weight: 700;
-                letter-spacing: 0.5px;
-            }}
-        """)
 
         headerLayout.addWidget(self.statusLabel)
-        layout.addLayout(headerLayout)
+        layout.addWidget(self.topStatusBar)
 
         # =================================================
         # CAMERA STREAM CONTAINER
@@ -195,6 +145,7 @@ class StudentCameraCard(QFrame):
         self.cameraLabel = QLabel(
             "📡 Initializing Video Stream...\nWaiting for examinee feed"
         )
+        self.cameraLabel.setObjectName("cameraFeed")
         self.cameraLabel.setAlignment(
             Qt.AlignCenter
         )
@@ -202,19 +153,53 @@ class StudentCameraCard(QFrame):
             400,
             270
         )
-        self.cameraLabel.setStyleSheet(f"""
-            QLabel {{
-                background-color: #090D16;
-                color: {TEXT_MUTED};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-                font-size: 12px;
-                font-weight: 600;
-            }}
-        """)
 
         layout.addWidget(self.cameraLabel)
         self.setLayout(layout)
+
+        self._apply_theme_styles()
+        register_theme_listener(self._on_theme_changed)
+
+    def _on_theme_changed(self, theme_name):
+        self._apply_theme_styles()
+
+    def _apply_theme_styles(self):
+        p = get_theme_palette()
+
+        self.avatar.setStyleSheet(f"""
+            background-color: {p['bg_card_alt']};
+            border: 1px solid {p['border_subtle']};
+            border-radius: 19px;
+        """)
+
+        self.registerLabel.setStyleSheet(f"color: {p['text_secondary']}; font-size: 12px; font-weight: 600; background: transparent; border: none;")
+        self.subjectLabel.setStyleSheet(f"color: {p['color_primary']}; font-size: 12px; font-weight: 600; background: transparent; border: none;")
+
+        if not self.is_disconnected:
+            self.statusLabel.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {p['badge_success_bg']};
+                    color: {p['badge_success_text']};
+                    border: 1px solid {p['badge_success_border']};
+                    border-radius: 12px;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.5px;
+                }}
+            """)
+        else:
+            self.statusLabel.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {p['badge_danger_bg']};
+                    color: {p['badge_danger_text']};
+                    border: 1px solid {p['badge_danger_border']};
+                    border-radius: 12px;
+                    padding: 4px 12px;
+                    font-size: 11px;
+                    font-weight: 700;
+                }}
+            """)
 
     # =====================================================
     # UPDATE FRAME
@@ -269,18 +254,21 @@ class StudentCameraCard(QFrame):
 
     def set_disconnected(self):
 
+        self.is_disconnected = True
+        p = get_theme_palette()
+
         self.statusLabel.setText(
             "● SESSION ENDED"
         )
 
         self.statusLabel.setStyleSheet(f"""
             QLabel {{
-                background-color: {BADGE_DANGER_BG};
-                color: {BADGE_DANGER_TEXT};
-                border: 1px solid {BADGE_DANGER_BORDER};
+                background-color: {p['badge_danger_bg']};
+                color: {p['badge_danger_text']};
+                border: 1px solid {p['badge_danger_border']};
                 border-radius: 12px;
-                padding: 4px 10px;
-                font-size: 10px;
+                padding: 4px 12px;
+                font-size: 11px;
                 font-weight: 700;
             }}
         """)
@@ -300,12 +288,12 @@ class StudentCameraCard(QFrame):
 
         self.cameraLabel.setStyleSheet(f"""
             QLabel {{
-                background-color: #0F141F;
-                color: {BADGE_DANGER_TEXT};
-                border: 1px dashed {BADGE_DANGER_BORDER};
-                border-radius: 10px;
+                background-color: {p['bg_card_alt']};
+                color: {p['badge_danger_text']};
+                border: 1px dashed {p['badge_danger_border']};
+                border-radius: 12px;
                 font-size: 13px;
-                font-weight: bold;
+                font-weight: 700;
             }}
         """)
 
@@ -338,6 +326,7 @@ class LiveMonitorPage(QWidget):
 
         self.setupUI()
         self.start_camera_server()
+        register_theme_listener(self._on_theme_changed)
 
     # =====================================================
     # UI
@@ -345,11 +334,7 @@ class LiveMonitorPage(QWidget):
 
     def setupUI(self):
 
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {BG_CANVAS};
-            }}
-        """)
+        self.setObjectName("pageWidget")
 
         mainLayout = QVBoxLayout()
         mainLayout.setContentsMargins(28, 24, 28, 24)
@@ -360,42 +345,25 @@ class LiveMonitorPage(QWidget):
         # =================================================
 
         headerFrame = QFrame()
-        headerFrame.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerFrame.setObjectName("headerCard")
 
         headerLayout = QHBoxLayout()
         headerLayout.setContentsMargins(20, 16, 20, 16)
         headerLayout.setSpacing(14)
 
         titleLayout = QVBoxLayout()
-        titleLayout.setSpacing(2)
+        titleLayout.setSpacing(3)
 
         title = QLabel(
             "📹 Live Proctoring Surveillance Grid"
         )
+        title.setObjectName("pageTitle")
         title.setFont(
             QFont("Segoe UI", 16, QFont.Bold)
         )
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subTitle = QLabel("Active webcam streams receiving real-time OpenCV proctoring feeds.")
-        subTitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subTitle.setObjectName("pageSubtitle")
 
         titleLayout.addWidget(title)
         titleLayout.addWidget(subTitle)
@@ -410,37 +378,13 @@ class LiveMonitorPage(QWidget):
         self.serverStatusLabel.setFont(
             QFont("Segoe UI", 10, QFont.Bold)
         )
-        self.serverStatusLabel.setStyleSheet(f"""
-            QLabel {{
-                background-color: {BADGE_SUCCESS_BG};
-                color: {BADGE_SUCCESS_TEXT};
-                border: 1px solid {BADGE_SUCCESS_BORDER};
-                border-radius: 12px;
-                padding: 6px 14px;
-                font-size: 11px;
-                font-weight: 700;
-                letter-spacing: 0.5px;
-            }}
-        """)
 
         self.refreshButton = QPushButton(
             "🔄 Refresh Grid"
         )
-        self.refreshButton.setMinimumHeight(36)
-        self.refreshButton.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                padding: 6px 14px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #1E293B;
-                border-color: {COLOR_PRIMARY};
-            }}
-        """)
+        self.refreshButton.setObjectName("secondaryBtn")
+        self.refreshButton.setCursor(Qt.PointingHandCursor)
+        self.refreshButton.setMinimumHeight(38)
 
         self.refreshButton.clicked.connect(
             self.refresh_students
@@ -458,12 +402,6 @@ class LiveMonitorPage(QWidget):
 
         self.scrollArea = QScrollArea()
         self.scrollArea.setWidgetResizable(True)
-        self.scrollArea.setStyleSheet(f"""
-            QScrollArea {{
-                border: none;
-                background-color: transparent;
-            }}
-        """)
 
         self.scrollWidget = QWidget()
         self.scrollWidget.setStyleSheet("background-color: transparent;")
@@ -489,27 +427,17 @@ class LiveMonitorPage(QWidget):
         # =================================================
 
         self.emptyLabel = QLabel(
-            "📡 Waiting for examinee camera streams...\n"
+            "📡 Waiting for examinee camera streams...\n\n"
             "Streams connect automatically when students start examinations."
         )
+        self.emptyLabel.setObjectName("cameraFeed")
         self.emptyLabel.setAlignment(
             Qt.AlignCenter
         )
         self.emptyLabel.setFont(
             QFont("Segoe UI", 14)
         )
-        self.emptyLabel.setStyleSheet(f"""
-            QLabel {{
-                color: {TEXT_MUTED};
-                background-color: {BG_CARD};
-                border: 1px dashed {BORDER_SUBTLE};
-                border-radius: 14px;
-                padding: 60px;
-                font-size: 14px;
-                font-weight: 600;
-                line-height: 1.6;
-            }}
-        """)
+        self.emptyLabel.setMinimumHeight(240)
 
         self.gridLayout.addWidget(
             self.emptyLabel,
@@ -520,6 +448,26 @@ class LiveMonitorPage(QWidget):
         self.setLayout(
             mainLayout
         )
+
+        self._apply_server_badge()
+
+    def _on_theme_changed(self, theme_name):
+        self._apply_server_badge()
+
+    def _apply_server_badge(self):
+        p = get_theme_palette()
+        self.serverStatusLabel.setStyleSheet(f"""
+            QLabel {{
+                background-color: {p['badge_success_bg']};
+                color: {p['badge_success_text']};
+                border: 1px solid {p['badge_success_border']};
+                border-radius: 12px;
+                padding: 6px 14px;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.5px;
+            }}
+        """)
 
     # =====================================================
     # GET STUDENT + EXAM INFORMATION
@@ -635,15 +583,16 @@ class LiveMonitorPage(QWidget):
                 e
             )
 
+            p = get_theme_palette()
             self.serverStatusLabel.setText(
                 "🔴 SERVER ERROR"
             )
 
             self.serverStatusLabel.setStyleSheet(f"""
                 QLabel {{
-                    background-color: {BADGE_DANGER_BG};
-                    color: {BADGE_DANGER_TEXT};
-                    border: 1px solid {BADGE_DANGER_BORDER};
+                    background-color: {p['badge_danger_bg']};
+                    color: {p['badge_danger_text']};
+                    border: 1px solid {p['badge_danger_border']};
                     border-radius: 12px;
                     padding: 6px 14px;
                     font-size: 11px;

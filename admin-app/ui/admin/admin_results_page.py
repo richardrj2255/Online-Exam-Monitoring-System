@@ -66,22 +66,16 @@ class AdminResultsPage(QWidget):
 
     def _create_stat_card(self, title_text, label_widget, accent_color="#6366F1"):
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-                border-top: 3px solid {accent_color};
-            }}
-        """)
+        card.setObjectName("card")
         layout = QVBoxLayout(card)
-        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setContentsMargins(16, 12, 16, 12)
         layout.setSpacing(4)
 
         headerLbl = QLabel(title_text)
-        headerLbl.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; font-weight: 600; background: transparent; border: none;")
+        headerLbl.setObjectName("kpiTitle")
 
-        label_widget.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 14px; font-weight: 700; background: transparent; border: none;")
+        label_widget.setObjectName("kpiValue")
+        label_widget.setFont(QFont("Segoe UI", 14, QFont.Bold))
 
         layout.addWidget(headerLbl)
         layout.addWidget(label_widget)
@@ -93,7 +87,7 @@ class AdminResultsPage(QWidget):
 
     def setupUI(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.setObjectName("pageWidget")
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(28, 24, 28, 24)
@@ -104,13 +98,7 @@ class AdminResultsPage(QWidget):
         # ====================================================
 
         headerCard = QFrame()
-        headerCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerCard.setObjectName("headerCard")
         headerLayout = QHBoxLayout(headerCard)
         headerLayout.setContentsMargins(20, 16, 20, 16)
 
@@ -118,22 +106,11 @@ class AdminResultsPage(QWidget):
         titleLayout.setSpacing(3)
 
         title = QLabel("📊 Examination Performance & Results Analytics")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subtitle = QLabel("Analyze examinee scores, grading distributions, and submission audits.")
-        subtitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subtitle.setObjectName("pageSubtitle")
 
         titleLayout.addWidget(title)
         titleLayout.addWidget(subtitle)
@@ -173,40 +150,24 @@ class AdminResultsPage(QWidget):
         # ====================================================
 
         filterCard = QFrame()
-        filterCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-            }}
-        """)
+        filterCard.setObjectName("card")
         filter_layout = QHBoxLayout(filterCard)
         filter_layout.setContentsMargins(14, 10, 14, 10)
         filter_layout.setSpacing(12)
 
         self.exam_combo = QComboBox()
-        self.exam_combo.setMinimumHeight(38)
+        self.exam_combo.setMinimumHeight(40)
         self.exam_combo.currentIndexChanged.connect(self.exam_changed)
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("🔍 Filter by student name or register number...")
-        self.search.setMinimumHeight(38)
+        self.search.setMinimumHeight(40)
         self.search.textChanged.connect(self.search_results)
 
         refresh_btn = QPushButton("⟳ Refresh Results")
-        refresh_btn.setMinimumHeight(38)
-        refresh_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                padding: 8px 18px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        refresh_btn.setObjectName("secondaryBtn")
+        refresh_btn.setCursor(Qt.PointingHandCursor)
+        refresh_btn.setMinimumHeight(40)
         refresh_btn.clicked.connect(self.refresh_results)
 
         filter_layout.addWidget(self.exam_combo, 2)
@@ -220,13 +181,7 @@ class AdminResultsPage(QWidget):
         # ====================================================
 
         tableCard = QFrame()
-        tableCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        tableCard.setObjectName("tableCard")
         tableLayout = QVBoxLayout(tableCard)
         tableLayout.setContentsMargins(16, 16, 16, 16)
 
@@ -246,44 +201,16 @@ class AdminResultsPage(QWidget):
         ])
 
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(8, QHeaderView.Fixed)
+        self.table.setColumnWidth(8, 130)
+        self.table.horizontalHeader().setSectionResizeMode(9, QHeaderView.Fixed)
+        self.table.setColumnWidth(9, 140)
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {BG_CARD};
-                alternate-background-color: {BG_CARD_ALT};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                gridline-color: #243248;
-                font-size: 13px;
-                outline: none;
-            }}
-
-            QHeaderView::section {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_SECONDARY};
-                padding: 10px 12px;
-                border: none;
-                border-bottom: 1px solid {BORDER_SUBTLE};
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-            }}
-
-            QTableWidget::item {{
-                padding: 8px 10px;
-                border-bottom: 1px solid #1E293B;
-            }}
-
-            QTableWidget::item:selected {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setShowGrid(False)
 
         tableLayout.addWidget(self.table)
         main_layout.addWidget(tableCard)
@@ -406,21 +333,9 @@ class AdminResultsPage(QWidget):
             # VIEW BUTTON
             # ------------------------------------------------
             view_btn = QPushButton("👁 View Result")
-            view_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {BADGE_INFO_BG};
-                    color: {BADGE_INFO_TEXT};
-                    border: 1px solid {BADGE_INFO_BORDER};
-                    border-radius: 6px;
-                    padding: 5px 10px;
-                    font-size: 11px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background-color: #312E81;
-                    color: #FFFFFF;
-                }}
-            """)
+            view_btn.setObjectName("secondaryBtn")
+            view_btn.setCursor(Qt.PointingHandCursor)
+            view_btn.setMinimumHeight(32)
             view_btn.clicked.connect(
                 lambda checked, aid=attempt_id: self.view_result(aid)
             )
@@ -523,19 +438,19 @@ class AdminResultsPage(QWidget):
 
     def search_results(self):
 
-        text = self.search.text().strip().lower()
+        keyword = self.search.text().strip().lower()
 
-        if not text:
+        if not keyword:
             self.display_results(self.all_results)
             return
 
         filtered = []
 
         for result in self.all_results:
+            name = str(result["student_name"] or "").lower()
             register_no = str(result["register_no"] or "").lower()
-            student_name = str(result["student_name"] or "").lower()
 
-            if text in register_no or text in student_name:
+            if keyword in name or keyword in register_no:
                 filtered.append(result)
 
         self.display_results(filtered)
@@ -549,7 +464,7 @@ class AdminResultsPage(QWidget):
         self.load_results()
 
     # ========================================================
-    # VIEW RESULT
+    # VIEW RESULT DETAILS
     # ========================================================
 
     def view_result(self, attempt_id):
@@ -557,46 +472,34 @@ class AdminResultsPage(QWidget):
         result = ResultModel.get_attempt_result(attempt_id)
 
         if not result:
-            QMessageBox.warning(
-                self,
-                "Result Not Found",
-                "Unable to load this examination result."
-            )
+            QMessageBox.warning(self, "Error", "Result not found.")
             return
 
-        summary = ResultModel.get_attempt_summary(attempt_id)
         answers = ResultModel.get_attempt_answers(attempt_id)
+        summary = ResultModel.get_attempt_summary(attempt_id)
 
-        dialog = ResultDetailsDialog(
-            result,
-            summary,
-            answers,
-            self
-        )
+        dialog = ResultDetailDialog(result, answers, summary, self)
         dialog.exec_()
 
 
 # ============================================================
-# RESULT DETAILS DIALOG
+# RESULT DETAIL DIALOG
 # ============================================================
 
-class ResultDetailsDialog(QDialog):
+class ResultDetailDialog(QDialog):
 
-    def __init__(
-        self,
-        result,
-        summary,
-        answers,
-        parent=None
-    ):
+    def __init__(self, result, answers, summary, parent=None):
         super().__init__(parent)
 
         self.result = result
-        self.summary = summary
         self.answers = answers
+        self.summary = summary
 
-        self.setWindowTitle("Examination Result Audit")
-        self.resize(920, 720)
+        self.setWindowTitle(
+            f"Result Details - {self.result['student_name']} ({self.result['register_no']})"
+        )
+        self.resize(760, 680)
+
         self.setupUI()
 
     # ========================================================
@@ -605,7 +508,7 @@ class ResultDetailsDialog(QDialog):
 
     def setupUI(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS}; color: {TEXT_PRIMARY};")
+        self.setObjectName("pageWidget")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(24, 24, 24, 24)
@@ -613,8 +516,8 @@ class ResultDetailsDialog(QDialog):
 
         # Header Title
         title = QLabel("📄 Examination Result Details")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 20px; font-weight: 800;")
         layout.addWidget(title)
 
         infoRow = QHBoxLayout()
@@ -644,14 +547,7 @@ class ResultDetailsDialog(QDialog):
 
         # Score Banner Card
         score_card = QFrame()
-        score_card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {COLOR_PRIMARY};
-                border-radius: 10px;
-                padding: 12px;
-            }}
-        """)
+        score_card.setObjectName("card")
         score_layout = QVBoxLayout(score_card)
 
         score = float(self.result["score"] or 0)
@@ -665,9 +561,8 @@ class ResultDetailsDialog(QDialog):
         score_label = QLabel(
             f"Score: {score:.2f} / {total_marks:.2f}    |    Percentage: {percentage:.2f}%"
         )
-        score_label.setFont(QFont("Segoe UI", 15, QFont.Bold))
+        score_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
         score_label.setAlignment(Qt.AlignCenter)
-        score_label.setStyleSheet(f"color: {COLOR_PRIMARY}; font-size: 16px; font-weight: 800;")
         score_layout.addWidget(score_label)
 
         if self.summary:
@@ -679,7 +574,7 @@ class ResultDetailsDialog(QDialog):
                 f"Answered: {answered}  •  Correct: {correct}  •  Wrong: {wrong}"
             )
             summary_label.setAlignment(Qt.AlignCenter)
-            summary_label.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px;")
+            summary_label.setObjectName("pageSubtitle")
             score_layout.addWidget(summary_label)
 
         layout.addWidget(score_card)
@@ -687,17 +582,6 @@ class ResultDetailsDialog(QDialog):
         # Answers QTextEdit
         answers_text = QTextEdit()
         answers_text.setReadOnly(True)
-        answers_text.setStyleSheet(f"""
-            QTextEdit {{
-                background-color: {BG_CARD};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                font-family: 'Consolas', 'Courier New', monospace;
-                font-size: 12px;
-                padding: 12px;
-            }}
-        """)
 
         output = []
         for number, answer in enumerate(self.answers, start=1):
@@ -726,19 +610,10 @@ class ResultDetailsDialog(QDialog):
         button_layout.addStretch()
 
         close_btn = QPushButton("Close")
+        close_btn.setObjectName("secondaryBtn")
+        close_btn.setCursor(Qt.PointingHandCursor)
         close_btn.setMinimumWidth(120)
-        close_btn.setMinimumHeight(38)
-        close_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        close_btn.setMinimumHeight(40)
         close_btn.clicked.connect(self.accept)
 
         button_layout.addWidget(close_btn)

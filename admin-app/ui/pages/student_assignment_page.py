@@ -19,24 +19,7 @@ from functools import partial
 
 from ui.dialogs.assign_student_dialog import AssignStudentDialog
 from models.assignment_model import AssignmentModel
-
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BG_CARD_ALT,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
-    BADGE_INFO_BORDER,
-    BADGE_DANGER_BG,
-    BADGE_DANGER_TEXT,
-    BADGE_DANGER_BORDER,
-)
+from ui.theme_manager import get_theme_palette, register_theme_listener
 
 
 class StudentAssignmentPage(QWidget):
@@ -46,6 +29,7 @@ class StudentAssignmentPage(QWidget):
 
         self.setupUI()
         self.load_assignments()
+        register_theme_listener(self._on_theme_changed)
 
     ####################################################
     # UI
@@ -53,7 +37,7 @@ class StudentAssignmentPage(QWidget):
 
     def setupUI(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.setObjectName("pageWidget")
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(28, 24, 28, 24)
@@ -61,13 +45,7 @@ class StudentAssignmentPage(QWidget):
 
         # Header Card
         headerCard = QFrame()
-        headerCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerCard.setObjectName("headerCard")
         headerLayout = QHBoxLayout(headerCard)
         headerLayout.setContentsMargins(20, 16, 20, 16)
 
@@ -75,22 +53,11 @@ class StudentAssignmentPage(QWidget):
         titleLayout.setSpacing(3)
 
         title = QLabel("📋 Student Examination Assignment")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subtitle = QLabel("Allocate examinees to scheduled examination sessions and verify seating allocations.")
-        subtitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subtitle.setObjectName("pageSubtitle")
 
         titleLayout.addWidget(title)
         titleLayout.addWidget(subtitle)
@@ -98,69 +65,36 @@ class StudentAssignmentPage(QWidget):
         headerLayout.addStretch()
 
         self.totalLabel = QLabel("Total Assignments: 0")
-        self.totalLabel.setStyleSheet(f"""
-            QLabel {{
-                background-color: {BADGE_INFO_BG};
-                color: {BADGE_INFO_TEXT};
-                border: 1px solid {BADGE_INFO_BORDER};
-                border-radius: 12px;
-                padding: 6px 14px;
-                font-size: 11px;
-                font-weight: 700;
-            }}
-        """)
+        self.totalLabel.setFont(QFont("Segoe UI", 11, QFont.Bold))
         headerLayout.addWidget(self.totalLabel)
 
         main_layout.addWidget(headerCard)
 
         # Action Bar
         topCard = QFrame()
-        topCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-            }}
-        """)
+        topCard.setObjectName("card")
         top_layout = QHBoxLayout(topCard)
         top_layout.setContentsMargins(14, 10, 14, 10)
         top_layout.setSpacing(12)
 
         self.search = QLineEdit()
         self.search.setPlaceholderText("🔍 Search assignments by student name or register number...")
-        self.search.setMinimumHeight(38)
+        self.search.setMinimumHeight(40)
         self.search.textChanged.connect(self.search_assignments)
 
         assignBtn = QPushButton("+ Assign Student to Exam")
-        assignBtn.setMinimumHeight(38)
-        assignBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                padding: 8px 18px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        assignBtn.setCursor(Qt.PointingHandCursor)
+        assignBtn.setMinimumHeight(40)
         assignBtn.clicked.connect(self.open_assign_dialog)
 
         top_layout.addWidget(self.search)
         top_layout.addWidget(assignBtn)
 
-        main_layout.addLayout(top_layout)
+        main_layout.addWidget(topCard)
 
         # Table Card
         tableCard = QFrame()
-        tableCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        tableCard.setObjectName("tableCard")
         tableLayout = QVBoxLayout(tableCard)
         tableLayout.setContentsMargins(16, 16, 16, 16)
 
@@ -182,51 +116,38 @@ class StudentAssignmentPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(8, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(8, QHeaderView.Fixed)
+        self.table.setColumnWidth(8, 120)
 
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {BG_CARD};
-                alternate-background-color: {BG_CARD_ALT};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                gridline-color: #243248;
-                font-size: 13px;
-                outline: none;
-            }}
-
-            QHeaderView::section {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_SECONDARY};
-                padding: 10px 12px;
-                border: none;
-                border-bottom: 1px solid {BORDER_SUBTLE};
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-            }}
-
-            QTableWidget::item {{
-                padding: 8px 10px;
-                border-bottom: 1px solid #1E293B;
-            }}
-
-            QTableWidget::item:selected {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setShowGrid(False)
 
         tableLayout.addWidget(self.table)
         main_layout.addWidget(tableCard)
 
         self.setLayout(main_layout)
+        self._apply_badge_style()
+
+    def _on_theme_changed(self, theme_name):
+        self._apply_badge_style()
+
+    def _apply_badge_style(self):
+        p = get_theme_palette()
+        self.totalLabel.setStyleSheet(f"""
+            QLabel {{
+                background-color: {p['badge_info_bg']};
+                color: {p['badge_info_text']};
+                border: 1px solid {p['badge_info_border']};
+                border-radius: 12px;
+                padding: 6px 14px;
+                font-size: 11px;
+                font-weight: 700;
+            }}
+        """)
 
     ####################################################
     # Load Assignments
@@ -242,47 +163,46 @@ class StudentAssignmentPage(QWidget):
         for row, assignment in enumerate(assignments):
 
             regItem = QTableWidgetItem(assignment["register_no"])
-            regItem.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            regItem.setFont(QFont("Segoe UI", 11, QFont.Bold))
             self.table.setItem(row, 0, regItem)
 
-            self.table.setItem(row, 1, QTableWidgetItem(assignment["name"]))
-            self.table.setItem(row, 2, QTableWidgetItem(assignment["exam_name"]))
+            nameItem = QTableWidgetItem(assignment["name"])
+            nameItem.setFont(QFont("Segoe UI", 11))
+            self.table.setItem(row, 1, nameItem)
+
+            examItem = QTableWidgetItem(assignment["exam_name"])
+            examItem.setFont(QFont("Segoe UI", 11))
+            self.table.setItem(row, 2, examItem)
 
             codeItem = QTableWidgetItem(assignment["subject_code"])
             codeItem.setTextAlignment(Qt.AlignCenter)
+            codeItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 3, codeItem)
 
-            self.table.setItem(row, 4, QTableWidgetItem(assignment["subject_name"]))
+            subItem = QTableWidgetItem(assignment["subject_name"])
+            subItem.setFont(QFont("Segoe UI", 11))
+            self.table.setItem(row, 4, subItem)
 
             dateItem = QTableWidgetItem(assignment["exam_date"])
             dateItem.setTextAlignment(Qt.AlignCenter)
+            dateItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 5, dateItem)
 
             startItem = QTableWidgetItem(assignment["start_time"])
             startItem.setTextAlignment(Qt.AlignCenter)
+            startItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 6, startItem)
 
             endItem = QTableWidgetItem(assignment["end_time"])
             endItem.setTextAlignment(Qt.AlignCenter)
+            endItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 7, endItem)
 
             # Delete Button
             deleteBtn = QPushButton("🗑 Remove")
-            deleteBtn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {BADGE_DANGER_BG};
-                    color: {BADGE_DANGER_TEXT};
-                    border: 1px solid {BADGE_DANGER_BORDER};
-                    border-radius: 6px;
-                    padding: 4px 10px;
-                    font-size: 11px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background-color: #9F1239;
-                    color: #FFFFFF;
-                }}
-            """)
+            deleteBtn.setObjectName("dangerBtn")
+            deleteBtn.setCursor(Qt.PointingHandCursor)
+            deleteBtn.setMinimumHeight(32)
             deleteBtn.clicked.connect(
                 partial(self.delete_assignment, assignment["assignment_id"])
             )

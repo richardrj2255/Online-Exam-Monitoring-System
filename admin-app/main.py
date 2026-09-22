@@ -3,8 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 
 from ui.login import LoginWindow
-from ui.qss_theme import get_main_stylesheet
-
+from ui.theme_manager import apply_theme
 
 # =============================================================
 # APPLICATION
@@ -13,9 +12,7 @@ from ui.qss_theme import get_main_stylesheet
 app = QApplication(
     sys.argv
 )
-app.setStyleSheet(
-    get_main_stylesheet()
-)
+apply_theme(app, "light")
 
 
 # =============================================================

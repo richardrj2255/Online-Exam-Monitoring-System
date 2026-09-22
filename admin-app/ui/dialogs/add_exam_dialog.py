@@ -12,16 +12,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
 from models.exam_model import ExamModel
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-)
 
 
 class AddExamDialog(QDialog):
@@ -36,7 +26,7 @@ class AddExamDialog(QDialog):
         else:
             self.setWindowTitle("Schedule New Examination")
 
-        self.setFixedSize(500, 680)
+        self.setFixedSize(500, 700)
 
         self.setup_ui()
 
@@ -47,7 +37,7 @@ class AddExamDialog(QDialog):
 
     def setup_ui(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS}; color: {TEXT_PRIMARY};")
+        self.setObjectName("pageWidget")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(28, 28, 28, 28)
@@ -55,15 +45,9 @@ class AddExamDialog(QDialog):
 
         # Card Container
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 12px;
-            }}
-        """)
+        card.setObjectName("card")
         cardLayout = QVBoxLayout(card)
-        cardLayout.setContentsMargins(20, 20, 20, 20)
+        cardLayout.setContentsMargins(22, 22, 22, 22)
         cardLayout.setSpacing(10)
 
         if self.exam:
@@ -71,12 +55,12 @@ class AddExamDialog(QDialog):
         else:
             title = QLabel("➕ Schedule New Examination")
 
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: 700; background: transparent; border: none;")
         cardLayout.addWidget(title)
 
         subtitle = QLabel("Configure academic session attributes and scheduling timetable.")
-        subtitle.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; background: transparent; border: none; margin-bottom: 6px;")
+        subtitle.setObjectName("pageSubtitle")
         cardLayout.addWidget(subtitle)
 
         self.exam_name = QLineEdit()
@@ -121,7 +105,7 @@ class AddExamDialog(QDialog):
             self.end_time,
             self.duration,
         ]:
-            field.setMinimumHeight(36)
+            field.setMinimumHeight(38)
             cardLayout.addWidget(field)
 
         layout.addWidget(card)
@@ -132,19 +116,9 @@ class AddExamDialog(QDialog):
         else:
             self.saveBtn = QPushButton("Save & Publish Examination")
 
-        self.saveBtn.setMinimumHeight(42)
-        self.saveBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: 700;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        self.saveBtn.setCursor(Qt.PointingHandCursor)
+        self.saveBtn.setMinimumHeight(44)
+        self.saveBtn.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self.saveBtn.clicked.connect(self.save_exam)
 
         layout.addWidget(self.saveBtn)
@@ -181,77 +155,89 @@ class AddExamDialog(QDialog):
             self.end_time.text().strip() == "" or
             self.duration.text().strip() == ""
         ):
-
             QMessageBox.warning(
                 self,
                 "Validation Error",
-                "Please fill all required examination parameters."
+                "All examination attributes are mandatory."
             )
             return
 
-        ##################################################
-        # EDIT MODE
-        ##################################################
+        data = {
+            "exam_name": self.exam_name.text().strip(),
+            "subject_code": self.subject_code.text().strip(),
+            "subject_name": self.subject_name.text().strip(),
+            "department": self.department.text().strip(),
+            "semester": self.semester.text().strip(),
+            "hall": self.hall.text().strip(),
+            "exam_date": self.exam_date.text().strip(),
+            "start_time": self.start_time.text().strip(),
+            "end_time": self.end_time.text().strip(),
+            "duration": self.duration.text().strip(),
+        }
+
+        # ----------------------------------------------------
+        # EDIT
+        # ----------------------------------------------------
 
         if self.exam:
 
             success = ExamModel.update_exam(
                 self.exam["id"],
-                self.exam_name.text().strip(),
-                self.subject_code.text().strip(),
-                self.subject_name.text().strip(),
-                self.department.text().strip(),
-                self.semester.text().strip(),
-                self.hall.text().strip(),
-                self.exam_date.text().strip(),
-                self.start_time.text().strip(),
-                self.end_time.text().strip(),
-                self.duration.text().strip()
+                data["exam_name"],
+                data["subject_code"],
+                data["subject_name"],
+                data["department"],
+                data["semester"],
+                data["hall"],
+                data["exam_date"],
+                data["start_time"],
+                data["end_time"],
+                data["duration"]
             )
 
             if success:
                 QMessageBox.information(
                     self,
                     "Success",
-                    "Examination updated successfully."
+                    "Examination session updated successfully."
                 )
                 self.accept()
             else:
                 QMessageBox.warning(
                     self,
                     "Error",
-                    "Unable to update examination."
+                    "Failed to update examination record."
                 )
 
-            return
+        # ----------------------------------------------------
+        # ADD
+        # ----------------------------------------------------
 
-        ##################################################
-        # ADD MODE
-        ##################################################
-
-        success = ExamModel.add_exam(
-            self.exam_name.text().strip(),
-            self.subject_code.text().strip(),
-            self.subject_name.text().strip(),
-            self.department.text().strip(),
-            self.semester.text().strip(),
-            self.hall.text().strip(),
-            self.exam_date.text().strip(),
-            self.start_time.text().strip(),
-            self.end_time.text().strip(),
-            self.duration.text().strip()
-        )
-
-        if success:
-            QMessageBox.information(
-                self,
-                "Success",
-                "Examination added successfully."
-            )
-            self.accept()
         else:
-            QMessageBox.warning(
-                self,
-                "Error",
-                "Unable to save examination."
+
+            success = ExamModel.add_exam(
+                data["exam_name"],
+                data["subject_code"],
+                data["subject_name"],
+                data["department"],
+                data["semester"],
+                data["hall"],
+                data["exam_date"],
+                data["start_time"],
+                data["end_time"],
+                data["duration"]
             )
+
+            if success:
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    "Examination session scheduled successfully."
+                )
+                self.accept()
+            else:
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "Failed to schedule examination."
+                )

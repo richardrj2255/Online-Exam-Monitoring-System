@@ -13,15 +13,6 @@ from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
 from models.assignment_model import AssignmentModel
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-)
 
 
 class AssignStudentDialog(QDialog):
@@ -41,43 +32,37 @@ class AssignStudentDialog(QDialog):
     def setupUI(self):
 
         self.setWindowTitle("Assign Examinee to Examination")
-        self.setFixedSize(480, 360)
-        self.setStyleSheet(f"background-color: {BG_CANVAS}; color: {TEXT_PRIMARY};")
+        self.setFixedSize(500, 380)
+        self.setObjectName("pageWidget")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(14)
 
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 12px;
-            }}
-        """)
+        card.setObjectName("card")
         cardLayout = QVBoxLayout(card)
-        cardLayout.setContentsMargins(20, 20, 20, 20)
+        cardLayout.setContentsMargins(22, 22, 22, 22)
         cardLayout.setSpacing(12)
 
         title = QLabel("📋 Assign Examinee to Exam")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 14, QFont.Bold))
-        title.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: 700; background: transparent; border: none;")
         cardLayout.addWidget(title)
 
         subtitle = QLabel("Select student candidate and scheduled examination session.")
-        subtitle.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 11px; background: transparent; border: none;")
+        subtitle.setObjectName("pageSubtitle")
         cardLayout.addWidget(subtitle)
 
         student_label = QLabel("Candidate Student:")
-        student_label.setStyleSheet(f"color: {TEXT_PRIMARY}; font-weight: 600; font-size: 12px; background: transparent;")
+        student_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self.studentCombo = QComboBox()
-        self.studentCombo.setMinimumHeight(38)
+        self.studentCombo.setMinimumHeight(40)
 
         exam_label = QLabel("Scheduled Examination:")
-        exam_label.setStyleSheet(f"color: {TEXT_PRIMARY}; font-weight: 600; font-size: 12px; background: transparent;")
+        exam_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
         self.examCombo = QComboBox()
-        self.examCombo.setMinimumHeight(38)
+        self.examCombo.setMinimumHeight(40)
 
         cardLayout.addWidget(student_label)
         cardLayout.addWidget(self.studentCombo)
@@ -87,19 +72,9 @@ class AssignStudentDialog(QDialog):
         layout.addWidget(card)
 
         self.assignBtn = QPushButton("Confirm & Assign Examinee")
-        self.assignBtn.setMinimumHeight(42)
-        self.assignBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                font-size: 13px;
-                font-weight: 700;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        self.assignBtn.setCursor(Qt.PointingHandCursor)
+        self.assignBtn.setMinimumHeight(44)
+        self.assignBtn.setFont(QFont("Segoe UI", 12, QFont.Bold))
         self.assignBtn.clicked.connect(self.assign_student)
 
         layout.addWidget(self.assignBtn)

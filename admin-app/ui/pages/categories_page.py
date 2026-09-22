@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QHeaderView,
+    QFrame,
 )
 
 from PyQt5.QtCore import Qt
@@ -57,7 +58,7 @@ class CategoriesPage(QWidget):
 
     def setup_ui(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.setObjectName("pageWidget")
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(28, 24, 28, 24)
@@ -67,35 +68,18 @@ class CategoriesPage(QWidget):
         # HEADER CARD
         # ------------------------------------------------------
 
-        headerCard = QWidget()
-        headerCard.setStyleSheet(f"""
-            QWidget {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerCard = QFrame()
+        headerCard.setObjectName("headerCard")
         headerLayout = QVBoxLayout(headerCard)
         headerLayout.setContentsMargins(20, 16, 20, 16)
         headerLayout.setSpacing(3)
 
         title = QLabel("🏷 Question Bank Category Taxonomy")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subtitle = QLabel("Create, organize, and manage academic subject categories for modular exam generation.")
-        subtitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subtitle.setObjectName("pageSubtitle")
 
         headerLayout.addWidget(title)
         headerLayout.addWidget(subtitle)
@@ -105,24 +89,18 @@ class CategoriesPage(QWidget):
         # CATEGORY INPUT CARD
         # ------------------------------------------------------
 
-        inputCard = QWidget()
-        inputCard.setStyleSheet(f"""
-            QWidget {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-            }}
-        """)
+        inputCard = QFrame()
+        inputCard.setObjectName("card")
         input_layout = QHBoxLayout(inputCard)
         input_layout.setContentsMargins(16, 12, 16, 12)
         input_layout.setSpacing(12)
 
         category_label = QLabel("Category Name:")
-        category_label.setStyleSheet(f"color: {TEXT_PRIMARY}; font-weight: 600; font-size: 13px; background: transparent;")
+        category_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
 
         self.category_input = QLineEdit()
         self.category_input.setPlaceholderText("Enter category name (e.g. Computer Networks, Machine Learning)...")
-        self.category_input.setMinimumHeight(38)
+        self.category_input.setMinimumHeight(40)
 
         input_layout.addWidget(category_label)
         input_layout.addWidget(self.category_input, 1)
@@ -137,85 +115,29 @@ class CategoriesPage(QWidget):
         button_layout.setSpacing(12)
 
         self.add_button = QPushButton("➕ Save Category")
-        self.add_button.setMinimumHeight(38)
-        self.add_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                padding: 8px 18px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        self.add_button.setObjectName("successBtn")
+        self.add_button.setCursor(Qt.PointingHandCursor)
+        self.add_button.setMinimumHeight(40)
 
         self.update_button = QPushButton("✏ Update Category")
-        self.update_button.setMinimumHeight(38)
-        self.update_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BADGE_INFO_BG};
-                color: {BADGE_INFO_TEXT};
-                border: 1px solid {BADGE_INFO_BORDER};
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        self.update_button.setObjectName("secondaryBtn")
+        self.update_button.setCursor(Qt.PointingHandCursor)
+        self.update_button.setMinimumHeight(40)
 
         self.delete_button = QPushButton("🗑 Delete Category")
-        self.delete_button.setMinimumHeight(38)
-        self.delete_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BADGE_DANGER_BG};
-                color: {BADGE_DANGER_TEXT};
-                border: 1px solid {BADGE_DANGER_BORDER};
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #9F1239;
-                color: #FFFFFF;
-            }}
-        """)
+        self.delete_button.setObjectName("dangerBtn")
+        self.delete_button.setCursor(Qt.PointingHandCursor)
+        self.delete_button.setMinimumHeight(40)
 
         self.clear_button = QPushButton("Clear")
-        self.clear_button.setMinimumHeight(38)
-        self.clear_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BG_CARD};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #243248;
-            }}
-        """)
+        self.clear_button.setObjectName("secondaryBtn")
+        self.clear_button.setCursor(Qt.PointingHandCursor)
+        self.clear_button.setMinimumHeight(40)
 
         self.refresh_button = QPushButton("🔄 Refresh")
-        self.refresh_button.setMinimumHeight(38)
-        self.refresh_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BG_CARD};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: #243248;
-            }}
-        """)
+        self.refresh_button.setObjectName("secondaryBtn")
+        self.refresh_button.setCursor(Qt.PointingHandCursor)
+        self.refresh_button.setMinimumHeight(40)
 
         self.add_button.clicked.connect(self.add_category)
         self.update_button.clicked.connect(self.update_category)
@@ -236,25 +158,13 @@ class CategoriesPage(QWidget):
         # CATEGORY TABLE CARD
         # ------------------------------------------------------
 
-        tableCard = QWidget()
-        tableCard.setStyleSheet(f"""
-            QWidget {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        tableCard = QFrame()
+        tableCard.setObjectName("tableCard")
         tableLayout = QVBoxLayout(tableCard)
         tableLayout.setContentsMargins(16, 16, 16, 16)
 
         table_title = QLabel("Available Categories")
-        table_title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 15px;
-            font-weight: 700;
-            background: transparent;
-            border: none;
-        """)
+        table_title.setObjectName("sectionHeader")
         tableLayout.addWidget(table_title)
 
         self.table = QTableWidget()
@@ -270,39 +180,11 @@ class CategoriesPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.verticalHeader().setVisible(False)
-
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {BG_CARD};
-                alternate-background-color: {BG_CARD_ALT};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                gridline-color: #243248;
-                font-size: 13px;
-                outline: none;
-            }}
-            QHeaderView::section {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_SECONDARY};
-                padding: 10px 12px;
-                border: none;
-                border-bottom: 1px solid {BORDER_SUBTLE};
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-            }}
-            QTableWidget::item {{
-                padding: 8px 12px;
-                border-bottom: 1px solid #1E293B;
-            }}
-            QTableWidget::item:selected {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setShowGrid(False)
 
         self.table.cellClicked.connect(self.select_category)
+
         tableLayout.addWidget(self.table)
         main_layout.addWidget(tableCard)
 

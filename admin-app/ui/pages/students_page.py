@@ -19,23 +19,7 @@ from functools import partial
 
 from ui.dialogs.add_student_dialog import AddStudentDialog
 from models.student_model import StudentModel
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BG_CARD_ALT,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
-    BADGE_INFO_BORDER,
-    BADGE_DANGER_BG,
-    BADGE_DANGER_TEXT,
-    BADGE_DANGER_BORDER,
-)
+from ui.theme_manager import get_theme_palette, register_theme_listener
 
 
 class StudentsPage(QWidget):
@@ -45,6 +29,7 @@ class StudentsPage(QWidget):
 
         self.setupUI()
         self.load_students()
+        register_theme_listener(self._on_theme_changed)
 
     ####################################################
     # UI
@@ -52,7 +37,7 @@ class StudentsPage(QWidget):
 
     def setupUI(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.setObjectName("pageWidget")
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(28, 24, 28, 24)
@@ -60,13 +45,7 @@ class StudentsPage(QWidget):
 
         # Header card
         headerCard = QFrame()
-        headerCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerCard.setObjectName("headerCard")
         headerLayout = QHBoxLayout(headerCard)
         headerLayout.setContentsMargins(20, 16, 20, 16)
 
@@ -74,22 +53,11 @@ class StudentsPage(QWidget):
         titleLayout.setSpacing(3)
 
         title = QLabel("👨‍🎓 Examinee Roster & Profile Management")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subtitle = QLabel("Register, modify, and audit student credentials for monitored exams.")
-        subtitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subtitle.setObjectName("pageSubtitle")
 
         titleLayout.addWidget(title)
         titleLayout.addWidget(subtitle)
@@ -97,30 +65,14 @@ class StudentsPage(QWidget):
         headerLayout.addStretch()
 
         self.totalLabel = QLabel("Total Students: 0")
-        self.totalLabel.setStyleSheet(f"""
-            QLabel {{
-                background-color: {BADGE_INFO_BG};
-                color: {BADGE_INFO_TEXT};
-                border: 1px solid {BADGE_INFO_BORDER};
-                border-radius: 12px;
-                padding: 6px 14px;
-                font-size: 11px;
-                font-weight: 700;
-            }}
-        """)
+        self.totalLabel.setFont(QFont("Segoe UI", 11, QFont.Bold))
         headerLayout.addWidget(self.totalLabel)
 
         main_layout.addWidget(headerCard)
 
         # Action Bar
         topCard = QFrame()
-        topCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-            }}
-        """)
+        topCard.setObjectName("card")
         top_layout = QHBoxLayout(topCard)
         top_layout.setContentsMargins(14, 10, 14, 10)
         top_layout.setSpacing(12)
@@ -128,22 +80,11 @@ class StudentsPage(QWidget):
         self.search = QLineEdit()
         self.search.setPlaceholderText("🔍 Search examinees by Register Number or Name...")
         self.search.textChanged.connect(self.search_students)
-        self.search.setMinimumHeight(38)
+        self.search.setMinimumHeight(40)
 
         add_btn = QPushButton("+ Register Student")
-        add_btn.setMinimumHeight(38)
-        add_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                padding: 8px 18px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        add_btn.setCursor(Qt.PointingHandCursor)
+        add_btn.setMinimumHeight(40)
         add_btn.clicked.connect(self.open_add_student)
 
         top_layout.addWidget(self.search)
@@ -153,13 +94,7 @@ class StudentsPage(QWidget):
 
         # Table
         tableCard = QFrame()
-        tableCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        tableCard.setObjectName("tableCard")
         tableLayout = QVBoxLayout(tableCard)
         tableLayout.setContentsMargins(16, 16, 16, 16)
 
@@ -180,52 +115,40 @@ class StudentsPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.table.horizontalHeader().setSectionResizeMode(6, QHeaderView.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(8, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(7, QHeaderView.Fixed)
+        self.table.setColumnWidth(7, 95)
+        self.table.horizontalHeader().setSectionResizeMode(8, QHeaderView.Fixed)
+        self.table.setColumnWidth(8, 105)
 
         self.table.setAlternatingRowColors(True)
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.verticalHeader().setVisible(False)
-
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {BG_CARD};
-                alternate-background-color: {BG_CARD_ALT};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                gridline-color: #243248;
-                font-size: 13px;
-                outline: none;
-            }}
-
-            QHeaderView::section {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_SECONDARY};
-                padding: 10px 12px;
-                border: none;
-                border-bottom: 1px solid {BORDER_SUBTLE};
-                font-weight: 700;
-                font-size: 11px;
-                letter-spacing: 0.5px;
-            }}
-
-            QTableWidget::item {{
-                padding: 8px 10px;
-                border-bottom: 1px solid #1E293B;
-            }}
-
-            QTableWidget::item:selected {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        self.table.verticalHeader().setDefaultSectionSize(44)
+        self.table.setShowGrid(False)
 
         tableLayout.addWidget(self.table)
         main_layout.addWidget(tableCard)
 
         self.setLayout(main_layout)
+        self._apply_badge_style()
+
+    def _on_theme_changed(self, theme_name):
+        self._apply_badge_style()
+
+    def _apply_badge_style(self):
+        p = get_theme_palette()
+        self.totalLabel.setStyleSheet(f"""
+            QLabel {{
+                background-color: {p['badge_info_bg']};
+                color: {p['badge_info_text']};
+                border: 1px solid {p['badge_info_border']};
+                border-radius: 12px;
+                padding: 6px 14px;
+                font-size: 11px;
+                font-weight: 700;
+            }}
+        """)
 
     ####################################################
     # Add Student
@@ -252,46 +175,43 @@ class StudentsPage(QWidget):
         for row, student in enumerate(students):
 
             regItem = QTableWidgetItem(student["register_no"])
-            regItem.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            regItem.setFont(QFont("Segoe UI", 11, QFont.Bold))
             self.table.setItem(row, 0, regItem)
 
-            self.table.setItem(row, 1, QTableWidgetItem(student["name"]))
-            self.table.setItem(row, 2, QTableWidgetItem(student["department"]))
+            nameItem = QTableWidgetItem(student["name"])
+            nameItem.setFont(QFont("Segoe UI", 11))
+            self.table.setItem(row, 1, nameItem)
 
-            semItem = QTableWidgetItem(student["semester"])
+            deptItem = QTableWidgetItem(student["department"])
+            deptItem.setFont(QFont("Segoe UI", 11))
+            self.table.setItem(row, 2, deptItem)
+
+            semItem = QTableWidgetItem(str(student["semester"]))
             semItem.setTextAlignment(Qt.AlignCenter)
+            semItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 3, semItem)
 
-            hallItem = QTableWidgetItem(student["hall"])
+            hallItem = QTableWidgetItem(str(student["hall"]))
             hallItem.setTextAlignment(Qt.AlignCenter)
+            hallItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 4, hallItem)
 
-            seatItem = QTableWidgetItem(student["seat"])
+            seatItem = QTableWidgetItem(str(student["seat"]))
             seatItem.setTextAlignment(Qt.AlignCenter)
+            seatItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 5, seatItem)
 
             photo = "📷 Enrolled" if student["photo"] else "-"
             photoItem = QTableWidgetItem(photo)
             photoItem.setTextAlignment(Qt.AlignCenter)
+            photoItem.setFont(QFont("Segoe UI", 11))
             self.table.setItem(row, 6, photoItem)
 
             # Edit Button
             edit_btn = QPushButton("✏ Edit")
-            edit_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {BADGE_INFO_BG};
-                    color: {BADGE_INFO_TEXT};
-                    border: 1px solid {BADGE_INFO_BORDER};
-                    border-radius: 6px;
-                    padding: 4px 10px;
-                    font-size: 11px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background-color: #312E81;
-                    color: #FFFFFF;
-                }}
-            """)
+            edit_btn.setObjectName("secondaryBtn")
+            edit_btn.setCursor(Qt.PointingHandCursor)
+            edit_btn.setMinimumHeight(32)
             edit_btn.clicked.connect(
                 partial(self.edit_student, student["register_no"])
             )
@@ -299,21 +219,9 @@ class StudentsPage(QWidget):
 
             # Delete Button
             delete_btn = QPushButton("🗑 Delete")
-            delete_btn.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: {BADGE_DANGER_BG};
-                    color: {BADGE_DANGER_TEXT};
-                    border: 1px solid {BADGE_DANGER_BORDER};
-                    border-radius: 6px;
-                    padding: 4px 10px;
-                    font-size: 11px;
-                    font-weight: 600;
-                }}
-                QPushButton:hover {{
-                    background-color: #9F1239;
-                    color: #FFFFFF;
-                }}
-            """)
+            delete_btn.setObjectName("dangerBtn")
+            delete_btn.setCursor(Qt.PointingHandCursor)
+            delete_btn.setMinimumHeight(32)
             delete_btn.clicked.connect(
                 partial(self.delete_student, student["register_no"])
             )

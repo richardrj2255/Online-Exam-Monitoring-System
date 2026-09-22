@@ -30,27 +30,14 @@ from ui.pages.live_monitor_page import LiveMonitorPage
 from models.student_model import StudentModel
 from models.exam_model import ExamModel
 
-from ui.qss_theme import (
-    get_main_stylesheet,
-    BG_CANVAS,
-    BG_CARD,
-    BG_SIDEBAR,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_SUCCESS_BG,
-    BADGE_SUCCESS_TEXT,
-    BADGE_SUCCESS_BORDER,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
-    BADGE_INFO_BORDER,
-    BADGE_DANGER_BG,
-    BADGE_DANGER_TEXT,
-    BADGE_DANGER_BORDER,
+from ui.theme_manager import (
+    apply_theme,
+    toggle_theme,
+    get_current_theme,
+    get_theme_palette,
+    register_theme_listener,
 )
+from ui.qss_theme import get_main_stylesheet
 
 
 class Dashboard(QMainWindow):
@@ -65,8 +52,11 @@ class Dashboard(QMainWindow):
         self.resize(1480, 880)
 
         self.navButtons = []
+        self._active_btn = None
+        self.kpi_cards = []
 
         self.setupUI()
+        register_theme_listener(self._on_theme_changed)
 
     # =========================================================
     # SETUP UI
@@ -75,7 +65,7 @@ class Dashboard(QMainWindow):
     def setupUI(self):
 
         central = QWidget()
-        central.setStyleSheet(f"background-color: {BG_CANVAS};")
+        central.setObjectName("centralWidget")
         self.setCentralWidget(central)
 
         mainLayout = QHBoxLayout()
@@ -83,40 +73,12 @@ class Dashboard(QMainWindow):
         mainLayout.setSpacing(0)
 
         # =====================================================
-        # SIDEBAR (180px - 220px -> 220px width)
+        # SIDEBAR (220px width)
         # =====================================================
 
         sidebar = QFrame()
-        sidebar.setFixedWidth(220)
-        sidebar.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_SIDEBAR};
-                border-right: 1px solid {BORDER_SUBTLE};
-            }}
-
-            QPushButton {{
-                color: {TEXT_SECONDARY};
-                background-color: transparent;
-                border: none;
-                border-radius: 8px;
-                text-align: left;
-                padding: 11px 16px;
-                font-size: 13px;
-                font-weight: 500;
-            }}
-
-            QPushButton:hover {{
-                color: {TEXT_PRIMARY};
-                background-color: #1E293B;
-            }}
-
-            QPushButton[active="true"] {{
-                color: #FFFFFF;
-                background-color: #312E81;
-                border-left: 3px solid {COLOR_PRIMARY};
-                font-weight: 700;
-            }}
-        """)
+        sidebar.setObjectName("sidebar")
+        sidebar.setFixedWidth(225)
 
         sideLayout = QVBoxLayout()
         sideLayout.setContentsMargins(14, 20, 14, 20)
@@ -126,6 +88,7 @@ class Dashboard(QMainWindow):
         # Brand Logo Header
         # -----------------------------------------------------
         brandContainer = QFrame()
+        brandContainer.setObjectName("brandContainer")
         brandContainer.setStyleSheet("background: transparent; border: none;")
         brandLayout = QVBoxLayout()
         brandLayout.setContentsMargins(4, 4, 4, 16)
@@ -138,19 +101,19 @@ class Dashboard(QMainWindow):
 
         title = QLabel("PROCTOR AI")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
+        title.setObjectName("brandTitle")
+        title.setStyleSheet("""
             font-size: 16px;
             font-weight: 800;
-            letter-spacing: 1px;
+            letter-spacing: 1.2px;
             background: transparent;
             border: none;
         """)
 
         subtitle = QLabel("Online Exam Monitor")
         subtitle.setAlignment(Qt.AlignCenter)
-        subtitle.setStyleSheet(f"""
-            color: {COLOR_PRIMARY};
+        subtitle.setObjectName("brandSubtitle")
+        subtitle.setStyleSheet("""
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 0.5px;
@@ -168,12 +131,14 @@ class Dashboard(QMainWindow):
         # Subtle separator
         sep = QFrame()
         sep.setFrameShape(QFrame.HLine)
-        sep.setStyleSheet(f"color: {BORDER_SUBTLE}; background-color: {BORDER_SUBTLE}; max-height: 1px; margin-bottom: 8px;")
+        sep.setObjectName("sidebarSep")
+        sep.setStyleSheet("max-height: 1px; margin-bottom: 8px; opacity: 0.5;")
         sideLayout.addWidget(sep)
 
         # Section Label
         sectionLbl = QLabel("NAVIGATION")
-        sectionLbl.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 10px; font-weight: 700; padding: 4px 10px; letter-spacing: 1px;")
+        sectionLbl.setObjectName("sectionHeader")
+        sectionLbl.setStyleSheet("font-size: 11px; font-weight: 700; padding: 4px 10px; letter-spacing: 1px;")
         sideLayout.addWidget(sectionLbl)
 
         # =====================================================
@@ -207,6 +172,8 @@ class Dashboard(QMainWindow):
         ]
 
         for btn in self.navButtons:
+            btn.setObjectName("navBtn")
+            btn.setCursor(Qt.PointingHandCursor)
             sideLayout.addWidget(btn)
 
         sideLayout.addStretch()
@@ -215,21 +182,9 @@ class Dashboard(QMainWindow):
         # Logout
         # -----------------------------------------------------
         self.logoutBtn = QPushButton("🚪  Logout")
-        self.logoutBtn.setStyleSheet(f"""
-            QPushButton {{
-                color: {BADGE_DANGER_TEXT};
-                background-color: transparent;
-                border: 1px solid {BADGE_DANGER_BORDER};
-                border-radius: 8px;
-                padding: 10px;
-                text-align: center;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {BADGE_DANGER_BG};
-                color: #FFFFFF;
-            }}
-        """)
+        self.logoutBtn.setObjectName("dangerBtn")
+        self.logoutBtn.setCursor(Qt.PointingHandCursor)
+        self.logoutBtn.setMinimumHeight(40)
         sideLayout.addWidget(self.logoutBtn)
 
         sidebar.setLayout(sideLayout)
@@ -239,6 +194,7 @@ class Dashboard(QMainWindow):
         # =====================================================
 
         workspace = QWidget()
+        workspace.setObjectName("pageWidget")
         workspaceLayout = QVBoxLayout()
         workspaceLayout.setContentsMargins(0, 0, 0, 0)
         workspaceLayout.setSpacing(0)
@@ -247,98 +203,87 @@ class Dashboard(QMainWindow):
         # Top Header Bar
         # -----------------------------------------------------
         topHeader = QFrame()
+        topHeader.setObjectName("topHeader")
         topHeader.setFixedHeight(64)
-        topHeader.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border-bottom: 1px solid {BORDER_SUBTLE};
-            }}
-        """)
 
         headerLayout = QHBoxLayout()
         headerLayout.setContentsMargins(24, 0, 24, 0)
         headerLayout.setSpacing(16)
 
         # Left status badge
-        statusPill = QFrame()
-        statusPill.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BADGE_SUCCESS_BG};
-                border: 1px solid {BADGE_SUCCESS_BORDER};
-                border-radius: 14px;
-                padding: 4px 12px;
-            }}
-        """)
-        pillLayout = QHBoxLayout(statusPill)
-        pillLayout.setContentsMargins(6, 2, 6, 2)
+        self.statusPill = QFrame()
+        self.statusPill.setObjectName("statusPill")
+        pillLayout = QHBoxLayout(self.statusPill)
+        pillLayout.setContentsMargins(10, 4, 12, 4)
         pillLayout.setSpacing(6)
 
-        liveDot = QLabel("●")
-        liveDot.setStyleSheet(f"color: {BADGE_SUCCESS_TEXT}; font-size: 10px; background: transparent; border: none;")
-        liveText = QLabel("AI PROCTORING ACTIVE • NOMINAL")
-        liveText.setStyleSheet(f"color: {BADGE_SUCCESS_TEXT}; font-size: 11px; font-weight: 700; background: transparent; border: none;")
-        pillLayout.addWidget(liveDot)
-        pillLayout.addWidget(liveText)
+        self.liveDot = QLabel("●")
+        self.liveDot.setStyleSheet("font-size: 10px; background: transparent; border: none;")
+        self.liveText = QLabel("AI PROCTORING ACTIVE • NOMINAL")
+        self.liveText.setStyleSheet("font-size: 11px; font-weight: 700; background: transparent; border: none;")
+        pillLayout.addWidget(self.liveDot)
+        pillLayout.addWidget(self.liveText)
 
-        headerLayout.addWidget(statusPill)
+        headerLayout.addWidget(self.statusPill)
 
         # Telemetry chip
-        telemetryChip = QLabel("⚡ Latency: 16ms | 🔒 Secure Stream")
-        telemetryChip.setStyleSheet(f"""
-            color: {TEXT_MUTED};
-            font-size: 12px;
-            font-weight: 500;
-            background: transparent;
-            border: none;
-        """)
-        headerLayout.addWidget(telemetryChip)
+        self.telemetryChip = QLabel("⚡ Latency: 16ms | 🔒 Secure Stream")
+        self.telemetryChip.setObjectName("telemetryChip")
+        self.telemetryChip.setStyleSheet("font-size: 13px; font-weight: 500; background: transparent; border: none;")
+        headerLayout.addWidget(self.telemetryChip)
 
         headerLayout.addStretch()
 
+        # -----------------------------------------------------
+        # THEME TOGGLE SWITCH BUTTON
+        # -----------------------------------------------------
+        self.themeToggleBtn = QPushButton()
+        self.themeToggleBtn.setObjectName("themeToggleBtn")
+        self.themeToggleBtn.setCursor(Qt.PointingHandCursor)
+        self.themeToggleBtn.setMinimumHeight(36)
+        self.update_theme_toggle_text()
+        self.themeToggleBtn.clicked.connect(self.toggle_theme)
+        headerLayout.addWidget(self.themeToggleBtn)
+
         # Admin Avatar / Profile Pill
-        adminPill = QFrame()
-        adminPill.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CANVAS};
-                border: 1px solid {BORDER_SUBTLE};
+        self.adminPill = QFrame()
+        self.adminPill.setObjectName("adminPill")
+        self.adminPill.setStyleSheet("""
+            QFrame#adminPill {
                 border-radius: 20px;
                 padding: 4px 12px;
-            }}
+            }
         """)
-        adminLayout = QHBoxLayout(adminPill)
+        adminLayout = QHBoxLayout(self.adminPill)
         adminLayout.setContentsMargins(4, 2, 8, 2)
         adminLayout.setSpacing(8)
 
-        avatar = QLabel("AD")
-        avatar.setAlignment(Qt.AlignCenter)
-        avatar.setFixedSize(28, 28)
-        avatar.setStyleSheet(f"""
-            background-color: {COLOR_PRIMARY};
+        self.avatar = QLabel("AD")
+        self.avatar.setAlignment(Qt.AlignCenter)
+        self.avatar.setFixedSize(28, 28)
+        self.avatar.setStyleSheet("""
             color: #FFFFFF;
             font-weight: 700;
             font-size: 11px;
             border-radius: 14px;
         """)
 
-        adminName = QLabel("Admin User")
-        adminName.setStyleSheet(f"color: {TEXT_PRIMARY}; font-weight: 600; font-size: 12px; background: transparent; border: none;")
+        self.adminName = QLabel("Admin User")
+        self.adminName.setStyleSheet("font-weight: 600; font-size: 13px; background: transparent; border: none;")
 
-        roleBadge = QLabel("SUPERUSER")
-        roleBadge.setStyleSheet(f"""
-            background-color: {BADGE_INFO_BG};
-            color: {BADGE_INFO_TEXT};
-            border: 1px solid {BADGE_INFO_BORDER};
+        self.roleBadge = QLabel("SUPERUSER")
+        self.roleBadge.setStyleSheet("""
             border-radius: 4px;
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 700;
-            padding: 1px 4px;
+            padding: 2px 6px;
         """)
 
-        adminLayout.addWidget(avatar)
-        adminLayout.addWidget(adminName)
-        adminLayout.addWidget(roleBadge)
+        adminLayout.addWidget(self.avatar)
+        adminLayout.addWidget(self.adminName)
+        adminLayout.addWidget(self.roleBadge)
 
-        headerLayout.addWidget(adminPill)
+        headerLayout.addWidget(self.adminPill)
         topHeader.setLayout(headerLayout)
 
         workspaceLayout.addWidget(topHeader)
@@ -348,7 +293,7 @@ class Dashboard(QMainWindow):
         # =====================================================
 
         self.stack = QStackedWidget()
-        self.stack.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.stack.setObjectName("pageWidget")
 
         self.dashboardPage = self.createDashboardPage()
         self.studentsPage = StudentsPage()
@@ -398,14 +343,110 @@ class Dashboard(QMainWindow):
         # Set initial active button
         self._set_active_button(self.dashboardBtn)
 
+        # Apply initial theme badge styles
+        self._apply_header_styles()
+
         # Initial refresh
         self.refresh_dashboard()
+
+    # =========================================================
+    # THEME SWITCHER
+    # =========================================================
+
+    def update_theme_toggle_text(self):
+        current = get_current_theme()
+        if current == "dark":
+            self.themeToggleBtn.setText("🌙 Dark Mode")
+            self.themeToggleBtn.setToolTip("Click to switch to Light Mode")
+        else:
+            self.themeToggleBtn.setText("☀️ Light Mode")
+            self.themeToggleBtn.setToolTip("Click to switch to Dark Mode")
+
+    def toggle_theme(self):
+        new_theme = toggle_theme(QApplication.instance())
+        self.update_theme_toggle_text()
+        self._apply_header_styles()
+        if self._active_btn:
+            self._set_active_button(self._active_btn)
+
+    def _on_theme_changed(self, theme_name):
+        self.update_theme_toggle_text()
+        self._apply_header_styles()
+
+    def _apply_header_styles(self):
+        p = get_theme_palette()
+
+        # Status Pill styling
+        self.statusPill.setStyleSheet(f"""
+            QFrame#statusPill {{
+                background-color: {p['badge_success_bg']};
+                border: 1px solid {p['badge_success_border']};
+                border-radius: 14px;
+            }}
+        """)
+        self.liveDot.setStyleSheet(f"color: {p['badge_success_text']}; font-size: 10px; background: transparent; border: none;")
+        self.liveText.setStyleSheet(f"color: {p['badge_success_text']}; font-size: 11px; font-weight: 700; background: transparent; border: none;")
+
+        # Telemetry styling
+        self.telemetryChip.setStyleSheet(f"color: {p['text_secondary']}; font-size: 13px; font-weight: 500; background: transparent; border: none;")
+
+        # Admin Pill styling
+        self.adminPill.setStyleSheet(f"""
+            QFrame#adminPill {{
+                background-color: {p['bg_card_alt']};
+                border: 1px solid {p['border_subtle']};
+                border-radius: 20px;
+            }}
+        """)
+        self.avatar.setStyleSheet(f"""
+            background-color: {p['color_primary']};
+            color: #FFFFFF;
+            font-weight: 700;
+            font-size: 11px;
+            border-radius: 14px;
+        """)
+        self.adminName.setStyleSheet(f"color: {p['text_primary']}; font-weight: 600; font-size: 13px; background: transparent; border: none;")
+        self.roleBadge.setStyleSheet(f"""
+            background-color: {p['badge_info_bg']};
+            color: {p['badge_info_text']};
+            border: 1px solid {p['badge_info_border']};
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 6px;
+        """)
+
+        # Re-apply card badge styling for registered KPI cards
+        for card_info in self.kpi_cards:
+            badge = card_info["badge"]
+            v_type = card_info["variant"]
+            if v_type == "success":
+                bg, fg, border = p['badge_success_bg'], p['badge_success_text'], p['badge_success_border']
+            elif v_type == "danger":
+                bg, fg, border = p['badge_danger_bg'], p['badge_danger_text'], p['badge_danger_border']
+            elif v_type == "info":
+                bg, fg, border = p['badge_info_bg'], p['badge_info_text'], p['badge_info_border']
+            elif v_type == "warning":
+                bg, fg, border = p['badge_warning_bg'], p['badge_warning_text'], p['badge_warning_border']
+            else:
+                bg, fg, border = p['badge_neutral_bg'], p['badge_neutral_text'], p['badge_neutral_border']
+
+            badge.setStyleSheet(f"""
+                background-color: {bg};
+                color: {fg};
+                border: 1px solid {border};
+                border-radius: 10px;
+                padding: 3px 10px;
+                font-size: 11px;
+                font-weight: 700;
+            """)
 
     # =========================================================
     # ACTIVE BUTTON STATE HELPER
     # =========================================================
 
     def _set_active_button(self, active_btn):
+        self._active_btn = active_btn
         for btn in self.navButtons:
             is_active = (btn == active_btn)
             btn.setProperty("active", "true" if is_active else "false")
@@ -438,37 +479,35 @@ class Dashboard(QMainWindow):
 
         card = QFrame()
         card.setObjectName("card")
-        card.setStyleSheet(f"""
-            QFrame#card {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 12px;
-            }}
-            QFrame#card:hover {{
-                border-color: {COLOR_PRIMARY};
-            }}
-        """)
-        card.setMinimumHeight(130)
+        card.setCursor(Qt.PointingHandCursor)
+        card.setMinimumHeight(135)
 
         layout = QVBoxLayout()
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(8)
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(10)
 
         # Top row: Title + Micro Badge
         topRow = QHBoxLayout()
         lblTitle = QLabel(title)
-        lblTitle.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px; font-weight: 600; background: transparent; border: none;")
+        lblTitle.setObjectName("kpiTitle")
 
         microBadge = QLabel(badge_text)
-        microBadge.setStyleSheet(f"""
-            background-color: #0B1726;
-            color: {badge_color};
-            border: 1px solid #1E3A5F;
-            border-radius: 10px;
-            padding: 2px 8px;
-            font-size: 10px;
-            font-weight: 700;
-        """)
+
+        # Determine variant
+        variant = "info"
+        if "live" in badge_text.lower() or "active" in badge_text.lower():
+            variant = "success"
+        elif "alert" in badge_text.lower() or "flag" in badge_text.lower():
+            variant = "danger"
+        elif "roster" in badge_text.lower():
+            variant = "info"
+        elif "schedule" in badge_text.lower():
+            variant = "warning"
+
+        self.kpi_cards.append({
+            "badge": microBadge,
+            "variant": variant
+        })
 
         topRow.addWidget(lblTitle)
         topRow.addStretch()
@@ -476,7 +515,7 @@ class Dashboard(QMainWindow):
 
         # Value
         lblValue = QLabel(str(value))
-        lblValue.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 32px; font-weight: 800; background: transparent; border: none;")
+        lblValue.setObjectName("kpiValue")
 
         # Store label for updating later
         card.valueLabel = lblValue
@@ -514,6 +553,7 @@ class Dashboard(QMainWindow):
     def createDashboardPage(self):
 
         page = QWidget()
+        page.setObjectName("pageWidget")
         layout = QVBoxLayout()
         layout.setContentsMargins(28, 28, 28, 28)
         layout.setSpacing(22)
@@ -526,11 +566,11 @@ class Dashboard(QMainWindow):
         headerLayout.setSpacing(4)
 
         header = QLabel("System Dashboard")
+        header.setObjectName("pageTitle")
         header.setFont(QFont("Segoe UI", 22, QFont.Bold))
-        header.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 24px; font-weight: 800;")
 
         subtitle = QLabel("Real-time telemetry, examinee metrics, and proctoring controls.")
-        subtitle.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 13px;")
+        subtitle.setObjectName("pageSubtitle")
 
         headerLayout.addWidget(header)
         headerLayout.addWidget(subtitle)
@@ -561,13 +601,6 @@ class Dashboard(QMainWindow):
 
         monitor = QFrame()
         monitor.setObjectName("card")
-        monitor.setStyleSheet(f"""
-            QFrame#card {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
         monitor.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         monitorLayout = QVBoxLayout()
@@ -577,22 +610,11 @@ class Dashboard(QMainWindow):
         # Preview Header
         previewTop = QHBoxLayout()
         monitorTitle = QLabel("📹 Live Proctoring Surveillance Feeds")
-        monitorTitle.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 16px; font-weight: 700; background: transparent; border: none;")
+        monitorTitle.setObjectName("sectionHeader")
 
         openStreamBtn = QPushButton("Open Surveillance Grid →")
-        openStreamBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border-radius: 8px;
-                padding: 8px 16px;
-                font-weight: 600;
-                font-size: 12px;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
+        openStreamBtn.setCursor(Qt.PointingHandCursor)
+        openStreamBtn.setMinimumHeight(38)
         openStreamBtn.clicked.connect(self.show_live_monitoring)
 
         previewTop.addWidget(monitorTitle)
@@ -601,34 +623,28 @@ class Dashboard(QMainWindow):
         monitorLayout.addLayout(previewTop)
 
         info = QLabel("Real-time OpenCV proctoring feeds from examinee webcams are streamed via TCP port 5001.")
-        info.setStyleSheet(f"color: {TEXT_SECONDARY}; font-size: 12px; background: transparent; border: none;")
+        info.setObjectName("pageSubtitle")
         monitorLayout.addWidget(info)
 
-        # Inner dark screen console
+        # Inner screen console
         screenConsole = QFrame()
-        screenConsole.setStyleSheet(f"""
-            QFrame {{
-                background-color: #090D16;
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 10px;
-            }}
-        """)
+        screenConsole.setObjectName("cameraFeed")
         screenLayout = QVBoxLayout()
         screenLayout.setAlignment(Qt.AlignCenter)
         screenLayout.setSpacing(10)
 
         radarIcon = QLabel("📡")
         radarIcon.setAlignment(Qt.AlignCenter)
-        radarIcon.setFont(QFont("Segoe UI Emoji", 32))
+        radarIcon.setFont(QFont("Segoe UI Emoji", 34))
         radarIcon.setStyleSheet("background: transparent; border: none;")
 
         placeholder = QLabel("Proctoring Server Listening on 0.0.0.0:5001")
         placeholder.setAlignment(Qt.AlignCenter)
-        placeholder.setStyleSheet(f"color: {TEXT_PRIMARY}; font-size: 15px; font-weight: 700; background: transparent; border: none;")
+        placeholder.setObjectName("sectionHeader")
 
         placeholderSub = QLabel("Student video streams will automatically appear here and in Live Monitoring when exams commence.")
         placeholderSub.setAlignment(Qt.AlignCenter)
-        placeholderSub.setStyleSheet(f"color: {TEXT_MUTED}; font-size: 12px; background: transparent; border: none;")
+        placeholderSub.setObjectName("pageSubtitle")
 
         screenLayout.addWidget(radarIcon)
         screenLayout.addWidget(placeholder)
@@ -701,7 +717,7 @@ if __name__ == "__main__":
     app = QApplication(
         sys.argv
     )
-    app.setStyleSheet(get_main_stylesheet())
+    apply_theme(app, "light")
 
     window = Dashboard()
     window.show()

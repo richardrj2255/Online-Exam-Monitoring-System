@@ -10,34 +10,14 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QMessageBox,
     QHeaderView,
-    QFileDialog,
     QFrame,
 )
 from PyQt5.QtGui import QFont
 from PyQt5.QtCore import Qt
 
 from database.database import get_connection
-from ui.qss_theme import (
-    BG_CANVAS,
-    BG_CARD,
-    BG_CARD_ALT,
-    BORDER_SUBTLE,
-    COLOR_PRIMARY,
-    COLOR_PRIMARY_HOVER,
-    TEXT_PRIMARY,
-    TEXT_SECONDARY,
-    TEXT_MUTED,
-    BADGE_DANGER_BG,
-    BADGE_DANGER_TEXT,
-    BADGE_DANGER_BORDER,
-    BADGE_SUCCESS_BG,
-    BADGE_SUCCESS_TEXT,
-    BADGE_SUCCESS_BORDER,
-    BADGE_INFO_BG,
-    BADGE_INFO_TEXT,
-    BADGE_INFO_BORDER,
-    create_badge_widget
-)
+from ui.theme_manager import get_theme_palette
+from ui.qss_theme import create_badge_widget
 
 
 class ViolationDetailsPage(QWidget):
@@ -54,7 +34,7 @@ class ViolationDetailsPage(QWidget):
 
     def setup_ui(self):
 
-        self.setStyleSheet(f"background-color: {BG_CANVAS};")
+        self.setObjectName("pageWidget")
 
         layout = QVBoxLayout()
         layout.setContentsMargins(28, 24, 28, 24)
@@ -65,13 +45,7 @@ class ViolationDetailsPage(QWidget):
         # =====================================================
 
         headerCard = QFrame()
-        headerCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        headerCard.setObjectName("headerCard")
         headerLayout = QHBoxLayout(headerCard)
         headerLayout.setContentsMargins(20, 16, 20, 16)
         headerLayout.setSpacing(14)
@@ -80,24 +54,13 @@ class ViolationDetailsPage(QWidget):
         titleLayout.setSpacing(3)
 
         title = QLabel("⚠ Real-Time Proctoring Infraction Logs")
+        title.setObjectName("pageTitle")
         title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        title.setStyleSheet(f"""
-            color: {TEXT_PRIMARY};
-            font-size: 18px;
-            font-weight: 800;
-            background: transparent;
-            border: none;
-        """)
 
         subtitle = QLabel(
             "Review automated AI detection flags, suspicious examinee behaviors, and screenshot evidence."
         )
-        subtitle.setStyleSheet(f"""
-            color: {TEXT_SECONDARY};
-            font-size: 12px;
-            background: transparent;
-            border: none;
-        """)
+        subtitle.setObjectName("pageSubtitle")
 
         titleLayout.addWidget(title)
         titleLayout.addWidget(subtitle)
@@ -106,21 +69,9 @@ class ViolationDetailsPage(QWidget):
 
         # Refresh button
         self.refreshBtn = QPushButton("🔄 Refresh Logs")
+        self.refreshBtn.setObjectName("secondaryBtn")
+        self.refreshBtn.setCursor(Qt.PointingHandCursor)
         self.refreshBtn.setMinimumHeight(38)
-        self.refreshBtn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {COLOR_PRIMARY};
-                color: #FFFFFF;
-                border: none;
-                border-radius: 8px;
-                padding: 8px 18px;
-                font-size: 13px;
-                font-weight: 600;
-            }}
-            QPushButton:hover {{
-                background-color: {COLOR_PRIMARY_HOVER};
-            }}
-        """)
         self.refreshBtn.clicked.connect(self.load_violations)
         headerLayout.addWidget(self.refreshBtn)
 
@@ -131,13 +82,7 @@ class ViolationDetailsPage(QWidget):
         # =====================================================
 
         tableCard = QFrame()
-        tableCard.setStyleSheet(f"""
-            QFrame {{
-                background-color: {BG_CARD};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 14px;
-            }}
-        """)
+        tableCard.setObjectName("tableCard")
         tableLayout = QVBoxLayout(tableCard)
         tableLayout.setContentsMargins(16, 16, 16, 16)
         tableLayout.setSpacing(12)
@@ -158,50 +103,19 @@ class ViolationDetailsPage(QWidget):
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setSelectionMode(QTableWidget.SingleSelection)
         self.table.verticalHeader().setVisible(False)
+        self.table.verticalHeader().setDefaultSectionSize(44)
         self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
 
         header = self.table.horizontalHeader()
-        header.setSectionResizeMode(0, QHeaderView.Stretch)
-        header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(2, QHeaderView.Stretch)
-        header.setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(4, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(5, QHeaderView.ResizeToContents)
-        header.setSectionResizeMode(6, QHeaderView.ResizeToContents)
-
-        self.table.setStyleSheet(f"""
-            QTableWidget {{
-                background-color: {BG_CARD};
-                alternate-background-color: {BG_CARD_ALT};
-                color: {TEXT_PRIMARY};
-                border: 1px solid {BORDER_SUBTLE};
-                border-radius: 8px;
-                gridline-color: #243248;
-                font-size: 13px;
-                outline: none;
-            }}
-
-            QHeaderView::section {{
-                background-color: {BG_CANVAS};
-                color: {TEXT_SECONDARY};
-                padding: 10px 14px;
-                font-weight: 700;
-                font-size: 11px;
-                border: none;
-                border-bottom: 1px solid {BORDER_SUBTLE};
-                letter-spacing: 0.5px;
-            }}
-
-            QTableWidget::item {{
-                padding: 10px 12px;
-                border-bottom: 1px solid #1E293B;
-            }}
-
-            QTableWidget::item:selected {{
-                background-color: #312E81;
-                color: #FFFFFF;
-            }}
-        """)
+        header.setSectionResizeMode(QHeaderView.Interactive)
+        self.table.setColumnWidth(0, 150)
+        self.table.setColumnWidth(1, 90)
+        self.table.setColumnWidth(2, 130)
+        self.table.setColumnWidth(3, 170)
+        self.table.setColumnWidth(4, 185)
+        self.table.setColumnWidth(5, 140)
+        self.table.setColumnWidth(6, 140)
 
         tableLayout.addWidget(self.table)
 
@@ -213,23 +127,11 @@ class ViolationDetailsPage(QWidget):
         footerLayout.setContentsMargins(4, 0, 4, 0)
 
         self.countLabel = QLabel("Total Violations: 0")
-        self.countLabel.setStyleSheet(f"""
-            QLabel {{
-                color: {TEXT_SECONDARY};
-                font-size: 12px;
-                font-weight: 600;
-                background: transparent;
-            }}
-        """)
+        self.countLabel.setObjectName("pageSubtitle")
+        self.countLabel.setFont(QFont("Segoe UI", 12, QFont.Bold))
 
         securityHint = QLabel("🛡️ Infractions are flagged automatically by OpenCV pose & device classifiers.")
-        securityHint.setStyleSheet(f"""
-            QLabel {{
-                color: {TEXT_MUTED};
-                font-size: 11px;
-                background: transparent;
-            }}
-        """)
+        securityHint.setObjectName("pageSubtitle")
 
         footerLayout.addWidget(self.countLabel)
         footerLayout.addStretch()
@@ -291,7 +193,7 @@ class ViolationDetailsPage(QWidget):
                 # -------------------------------------------------
                 student_name = violation["student_name"] if violation["student_name"] else "Unknown Examinee"
                 nameItem = QTableWidgetItem(f"👨‍🎓 {student_name}")
-                nameItem.setFont(QFont("Segoe UI", 10, QFont.Bold))
+                nameItem.setFont(QFont("Segoe UI", 11, QFont.Bold))
                 self.table.setItem(row, 0, nameItem)
 
                 # -------------------------------------------------
@@ -300,6 +202,7 @@ class ViolationDetailsPage(QWidget):
                 register_no = violation["register_no"] if violation["register_no"] else "-"
                 regItem = QTableWidgetItem(register_no)
                 regItem.setTextAlignment(Qt.AlignCenter)
+                regItem.setFont(QFont("Segoe UI", 11))
                 self.table.setItem(row, 1, regItem)
 
                 # -------------------------------------------------
@@ -307,6 +210,7 @@ class ViolationDetailsPage(QWidget):
                 # -------------------------------------------------
                 exam_name = violation["exam_name"] if violation["exam_name"] else "General Exam"
                 examItem = QTableWidgetItem(exam_name)
+                examItem.setFont(QFont("Segoe UI", 11))
                 self.table.setItem(row, 2, examItem)
 
                 # -------------------------------------------------
@@ -322,7 +226,7 @@ class ViolationDetailsPage(QWidget):
                 date_time = violation["date_time"] if violation["date_time"] else "-"
                 timeItem = QTableWidgetItem(date_time)
                 timeItem.setTextAlignment(Qt.AlignCenter)
-                timeItem.setForeground(Qt.gray)
+                timeItem.setFont(QFont("Segoe UI", 11))
                 self.table.setItem(row, 4, timeItem)
 
                 # -------------------------------------------------
@@ -331,22 +235,10 @@ class ViolationDetailsPage(QWidget):
                 screenshot = violation["screenshot"]
 
                 viewBtn = QPushButton("👁 View Snapshot")
-                viewBtn.setMinimumWidth(110)
-                viewBtn.setStyleSheet(f"""
-                    QPushButton {{
-                        background-color: {BADGE_INFO_BG};
-                        color: {BADGE_INFO_TEXT};
-                        border: 1px solid {BADGE_INFO_BORDER};
-                        border-radius: 6px;
-                        padding: 6px 10px;
-                        font-size: 11px;
-                        font-weight: 600;
-                    }}
-                    QPushButton:hover {{
-                        background-color: #312E81;
-                        color: #FFFFFF;
-                    }}
-                """)
+                viewBtn.setCursor(Qt.PointingHandCursor)
+                viewBtn.setObjectName("secondaryBtn")
+                viewBtn.setMinimumWidth(120)
+                viewBtn.setMinimumHeight(32)
 
                 viewBtn.clicked.connect(
                     lambda checked=False, path=screenshot: self.view_evidence(path)
