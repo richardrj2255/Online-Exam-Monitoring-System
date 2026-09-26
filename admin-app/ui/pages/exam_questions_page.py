@@ -1,5 +1,12 @@
 import sys
+import os
 import random
+
+# Add admin-app directory to sys.path if running as standalone
+current_dir = os.path.dirname(os.path.abspath(__file__))
+admin_app_dir = os.path.abspath(os.path.join(current_dir, "..", ".."))
+if admin_app_dir not in sys.path:
+    sys.path.insert(0, admin_app_dir)
 
 from PyQt5.QtWidgets import (
     QApplication,
@@ -68,25 +75,35 @@ class ExamQuestionsPage(QWidget):
         scroll.setStyleSheet("background: transparent; border: none;")
 
         container = QWidget()
-        container.setObjectName("pageWidget")
+        container.setObjectName("pageCanvas")
+        container.setStyleSheet("""
+            QWidget#pageCanvas {
+                background-color: #F8FAFC;
+            }
+            .QFrame[objectName^="card_"] {
+                background-color: #FFFFFF;
+                border: 1px solid #E2E8F0;
+                border-radius: 12px;
+            }
+        """)
 
         main_layout = QVBoxLayout(container)
         main_layout.setContentsMargins(28, 22, 28, 24)
-        main_layout.setSpacing(16)
+        main_layout.setSpacing(18)
 
         # ======================================================
         # 1. HEADER CARD (Blue square icon + titles)
         # ======================================================
 
-        headerCard = QFrame()
-        headerCard.setObjectName("headerCard")
-        headerLayout = QHBoxLayout(headerCard)
-        headerLayout.setContentsMargins(18, 14, 18, 14)
+        self.headerCard = QFrame()
+        self.headerCard.setObjectName("card_header")
+        headerLayout = QHBoxLayout(self.headerCard)
+        headerLayout.setContentsMargins(20, 16, 20, 16)
         headerLayout.setSpacing(16)
 
         # Blue square badge icon
         self.headerIconBox = QLabel("📋")
-        self.headerIconBox.setFixedSize(44, 44)
+        self.headerIconBox.setFixedSize(46, 46)
         self.headerIconBox.setAlignment(Qt.AlignCenter)
         self.headerIconBox.setFont(QFont("Segoe UI Emoji", 18))
         self.headerIconBox.setStyleSheet("""
@@ -113,14 +130,14 @@ class ExamQuestionsPage(QWidget):
         headerLayout.addLayout(titleLayout)
         headerLayout.addStretch()
 
-        main_layout.addWidget(headerCard)
+        main_layout.addWidget(self.headerCard)
 
         # ======================================================
         # 2. TOP SUMMARY / CONTROL BAR (Structured Metric Cards)
         # ======================================================
 
         self.summaryCard = QFrame()
-        self.summaryCard.setObjectName("summaryCard")
+        self.summaryCard.setObjectName("card_metrics")
         self.summaryCard.setStyleSheet("background: transparent; border: none;")
         summaryLayout = QHBoxLayout(self.summaryCard)
         summaryLayout.setContentsMargins(0, 0, 0, 0)
@@ -265,47 +282,84 @@ class ExamQuestionsPage(QWidget):
         main_layout.addWidget(self.summaryCard)
 
         # ======================================================
-        # 3. CARD: AUTOMATED QUESTION GENERATION ENGINE
+        # 3. BOX 1: AUTOMATED QUESTION GENERATION ENGINE CARD (QFrame#card_auto_generation)
         # ======================================================
 
-        genCard = QFrame()
-        genCard.setObjectName("card")
-        genCardLayout = QVBoxLayout(genCard)
+        self.card_auto_generation = QFrame()
+        self.card_auto_generation.setObjectName("card_auto_generation")
+        self.genCard = self.card_auto_generation  # Backward-compatible alias
+        genCardLayout = QVBoxLayout(self.card_auto_generation)
         genCardLayout.setContentsMargins(20, 18, 20, 18)
         genCardLayout.setSpacing(14)
+
+        # Header with blue badge icon
+        genHeaderRow = QHBoxLayout()
+        genHeaderRow.setSpacing(10)
+
+        genIconBadge = QLabel("✦")
+        genIconBadge.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        genIconBadge.setAlignment(Qt.AlignCenter)
+        genIconBadge.setFixedSize(28, 28)
+        genIconBadge.setStyleSheet("""
+            background-color: #2563EB;
+            color: #FFFFFF;
+            border-radius: 6px;
+            font-weight: 900;
+        """)
+
+        genTitleLayout = QVBoxLayout()
+        genTitleLayout.setSpacing(1)
 
         genHeader = QLabel("✦  Automated Question Generation Engine")
         genHeader.setObjectName("sectionHeader")
         genHeader.setFont(QFont("Segoe UI", 13, QFont.Bold))
-        genCardLayout.addWidget(genHeader)
+        genHeader.setStyleSheet("color: #0F172A; font-weight: 700; font-size: 14px;")
 
+        genSubheader = QLabel("Randomly synthesize and balance questions across categories for this examination.")
+        genSubheader.setStyleSheet("color: #64748B; font-size: 11px;")
+
+        genTitleLayout.addWidget(genHeader)
+        genTitleLayout.addWidget(genSubheader)
+
+        genHeaderRow.addWidget(genIconBadge)
+        genHeaderRow.addLayout(genTitleLayout)
+        genHeaderRow.addStretch()
+        genCardLayout.addLayout(genHeaderRow)
+
+        # Controls Row
         genRow = QHBoxLayout()
         genRow.setSpacing(16)
 
-        catLbl = QLabel("Category")
-        catLbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        catLbl = QLabel("Category:")
+        catLbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        catLbl.setStyleSheet("color: #475569; font-weight: 700;")
 
         self.category_combo = QComboBox()
         self.category_combo.setView(QListView())
-        self.category_combo.setMinimumHeight(40)
+        self.category_combo.setMinimumHeight(38)
+        self.category_combo.setCursor(Qt.PointingHandCursor)
         self.category_combo.currentIndexChanged.connect(self.category_changed)
 
-        countLbl = QLabel("Questions Count")
-        countLbl.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        countLbl = QLabel("Questions Count:")
+        countLbl.setFont(QFont("Segoe UI", 10, QFont.Bold))
+        countLbl.setStyleSheet("color: #475569; font-weight: 700;")
 
         self.number_spin = QSpinBox()
         self.number_spin.setMinimum(1)
         self.number_spin.setMaximum(1000)
         self.number_spin.setValue(10)
-        self.number_spin.setMinimumHeight(40)
+        self.number_spin.setMinimumHeight(38)
         self.number_spin.setMinimumWidth(100)
 
         self.auto_select_button = QPushButton("✦  Auto Select Questions")
+        self.auto_select_button.setObjectName("primaryAutoSelectBtn")
         self.auto_select_button.setCursor(Qt.PointingHandCursor)
-        self.auto_select_button.setMinimumHeight(40)
+        self.auto_select_button.setMinimumHeight(38)
         self.auto_select_button.clicked.connect(self.auto_select_questions)
 
         # Aliases for backwards compatibility with any callers or tests
+        self.questions_count_spin = self.number_spin
+        self.count_spin = self.number_spin
         self.autoSelectToggleBtn = self.auto_select_button
         self.auto_select_btn = self.auto_select_button
 
@@ -316,40 +370,32 @@ class ExamQuestionsPage(QWidget):
         genRow.addWidget(self.auto_select_button, 2)
 
         genCardLayout.addLayout(genRow)
-        main_layout.addWidget(genCard)
+        main_layout.addWidget(self.card_auto_generation)
 
         # ======================================================
-        # 4. CARD: AVAILABLE QUESTION BANK
+        # 4. BOX 2: AVAILABLE QUESTION BANK CARD (QFrame#card_available_questions)
         # ======================================================
 
-        availCard = QFrame()
-        availCard.setObjectName("card")
-        availCardLayout = QVBoxLayout(availCard)
+        self.card_available_questions = QFrame()
+        self.card_available_questions.setObjectName("card_available_questions")
+        self.availCard = self.card_available_questions  # Backward-compatible alias
+        availCardLayout = QVBoxLayout(self.card_available_questions)
         availCardLayout.setContentsMargins(18, 16, 18, 16)
         availCardLayout.setSpacing(12)
 
         availHeaderRow = QHBoxLayout()
-        availTitle = QLabel("🗄  Available Question Bank")
+        availHeaderRow.setSpacing(12)
+
+        availTitle = QLabel("🗄️  Available Question Bank")
         availTitle.setObjectName("sectionHeader")
         availTitle.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        availTitle.setStyleSheet("color: #0F172A; font-weight: 700; font-size: 14px;")
 
         self.search_available = QLineEdit()
-        self.search_available.setPlaceholderText("🔍 Search questions...")
-        self.search_available.setMinimumHeight(36)
-        self.search_available.setMaximumWidth(280)
-        self.search_available.setStyleSheet("""
-            QLineEdit {
-                border-radius: 8px;
-                padding: 4px 12px;
-                border: 1px solid #E2E8F0;
-                background-color: #FFFFFF;
-                color: #0F172A;
-                font-size: 12px;
-            }
-            QLineEdit:focus {
-                border-color: #2563EB;
-            }
-        """)
+        self.search_available.setObjectName("searchAvailableInput")
+        self.search_available.setPlaceholderText("🔍 Search questions by prompt or category...")
+        self.search_available.setMinimumHeight(38)
+        self.search_available.setMinimumWidth(300)
         self.search_available.textChanged.connect(self.filter_available_questions)
 
         availHeaderRow.addWidget(availTitle)
@@ -359,6 +405,7 @@ class ExamQuestionsPage(QWidget):
 
         # Table
         self.available_table = QTableWidget()
+        self.available_table.setObjectName("availableQuestionsTable")
         self.available_table.setColumnCount(6)
         self.available_table.setHorizontalHeaderLabels([
             "ID",
@@ -373,96 +420,83 @@ class ExamQuestionsPage(QWidget):
         self.available_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.available_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.available_table.setAlternatingRowColors(True)
-        self.available_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.available_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.available_table.setColumnWidth(0, 70)
-        self.available_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Fixed)
-        self.available_table.setColumnWidth(3, 90)
-        self.available_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
-        self.available_table.setColumnWidth(4, 130)
-        self.available_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.Fixed)
-        self.available_table.setColumnWidth(5, 95)
+        self.available_table.setShowGrid(False)
         self.available_table.verticalHeader().setVisible(False)
         self.available_table.verticalHeader().setDefaultSectionSize(44)
-        self.available_table.setMinimumHeight(190)
-        self.available_table.setShowGrid(False)
+        self.available_table.setMinimumHeight(200)
+
+        avail_header = self.available_table.horizontalHeader()
+        avail_header.setSectionResizeMode(QHeaderView.Stretch)
+        avail_header.setSectionResizeMode(0, QHeaderView.Fixed)
+        self.available_table.setColumnWidth(0, 70)
+        avail_header.setSectionResizeMode(2, QHeaderView.Fixed)
+        self.available_table.setColumnWidth(2, 150)
+        avail_header.setSectionResizeMode(3, QHeaderView.Fixed)
+        self.available_table.setColumnWidth(3, 90)
+        avail_header.setSectionResizeMode(4, QHeaderView.Fixed)
+        self.available_table.setColumnWidth(4, 130)
+        avail_header.setSectionResizeMode(5, QHeaderView.Fixed)
+        self.available_table.setColumnWidth(5, 100)
 
         availCardLayout.addWidget(self.available_table)
 
         # Bottom Action Bar
         availBottomRow = QHBoxLayout()
+        availBottomRow.setSpacing(10)
 
         self.assign_button = QPushButton("➕  Assign Selected Questions")
+        self.assign_button.setObjectName("primaryAssignBtn")
         self.assign_button.setCursor(Qt.PointingHandCursor)
         self.assign_button.setMinimumHeight(38)
-        self.assign_button.setStyleSheet("""
-            QPushButton {
-                background-color: #ECFDF5;
-                color: #059669;
-                border: 1px solid #A7F3D0;
-                border-radius: 8px;
-                padding: 6px 16px;
-                font-weight: 700;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #D1FAE5;
-                border-color: #059669;
-            }
-        """)
         self.assign_button.clicked.connect(self.assign_selected_questions)
 
-        self.refresh_button = QPushButton("⟳  Refresh Bank")
-        self.refresh_button.setObjectName("secondaryBtn")
+        self.refresh_button = QPushButton("↻  Refresh Bank")
+        self.refresh_button.setObjectName("neutralRefreshBtn")
         self.refresh_button.setCursor(Qt.PointingHandCursor)
         self.refresh_button.setMinimumHeight(38)
-        self.refresh_button.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                color: #475569;
-                border: 1px solid #CBD5E1;
-                border-radius: 8px;
-                padding: 6px 16px;
-                font-weight: 600;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #F8FAFC;
-                border-color: #94A3B8;
-            }
-        """)
         self.refresh_button.clicked.connect(self.refresh_page)
+
+        # Aliases
+        self.available_questions_table = self.available_table
+        self.add_btn = self.assign_button
+        self.assign_btn = self.assign_button
+        self.refresh_btn = self.refresh_button
 
         availBottomRow.addWidget(self.assign_button)
         availBottomRow.addStretch()
         availBottomRow.addWidget(self.refresh_button)
 
         availCardLayout.addLayout(availBottomRow)
-        main_layout.addWidget(availCard)
+        main_layout.addWidget(self.card_available_questions)
 
         # ======================================================
-        # 5. CARD: ASSIGNED EXAMINATION QUESTIONS
+        # 5. BOX 3: ASSIGNED EXAMINATION QUESTIONS CARD (QFrame#card_assigned_questions)
         # ======================================================
 
-        assignedCard = QFrame()
-        assignedCard.setObjectName("card")
-        assignedCardLayout = QVBoxLayout(assignedCard)
+        self.card_assigned_questions = QFrame()
+        self.card_assigned_questions.setObjectName("card_assigned_questions")
+        self.assignedCard = self.card_assigned_questions  # Backward-compatible alias
+        assignedCardLayout = QVBoxLayout(self.card_assigned_questions)
         assignedCardLayout.setContentsMargins(18, 16, 18, 16)
         assignedCardLayout.setSpacing(12)
 
         assignedHeaderRow = QHBoxLayout()
+        assignedHeaderRow.setSpacing(12)
+
         assignedTitle = QLabel("🔗  Assigned Examination Questions")
         assignedTitle.setObjectName("sectionHeader")
         assignedTitle.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        assignedTitle.setStyleSheet("color: #0F172A; font-weight: 700; font-size: 14px;")
 
         self.assigned_count_label = QLabel("Assigned: 0")
+        self.assigned_count_label.setObjectName("assignedCountBadge")
         self.assigned_count_label.setStyleSheet("""
-            QLabel {
+            QLabel#assignedCountBadge {
                 background-color: #EEF2FF;
                 color: #4F46E5;
                 border: 1px solid #C7D2FE;
                 border-radius: 12px;
-                padding: 3px 12px;
+                padding: 4px 14px;
                 font-weight: 700;
                 font-size: 11px;
             }
@@ -475,6 +509,7 @@ class ExamQuestionsPage(QWidget):
 
         # Assigned Table
         self.assigned_table = QTableWidget()
+        self.assigned_table.setObjectName("assignedQuestionsTable")
         self.assigned_table.setColumnCount(6)
         self.assigned_table.setHorizontalHeaderLabels([
             "ORDER",
@@ -488,19 +523,23 @@ class ExamQuestionsPage(QWidget):
         self.assigned_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.assigned_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.assigned_table.setAlternatingRowColors(True)
-        self.assigned_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.assigned_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
-        self.assigned_table.setColumnWidth(0, 80)
-        self.assigned_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Fixed)
-        self.assigned_table.setColumnWidth(1, 110)
-        self.assigned_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Fixed)
-        self.assigned_table.setColumnWidth(4, 90)
-        self.assigned_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.Fixed)
-        self.assigned_table.setColumnWidth(5, 105)
+        self.assigned_table.setShowGrid(False)
         self.assigned_table.verticalHeader().setVisible(False)
         self.assigned_table.verticalHeader().setDefaultSectionSize(44)
-        self.assigned_table.setMinimumHeight(190)
-        self.assigned_table.setShowGrid(False)
+        self.assigned_table.setMinimumHeight(200)
+
+        assigned_header = self.assigned_table.horizontalHeader()
+        assigned_header.setSectionResizeMode(QHeaderView.Stretch)
+        assigned_header.setSectionResizeMode(0, QHeaderView.Fixed)
+        self.assigned_table.setColumnWidth(0, 80)
+        assigned_header.setSectionResizeMode(1, QHeaderView.Fixed)
+        self.assigned_table.setColumnWidth(1, 110)
+        assigned_header.setSectionResizeMode(3, QHeaderView.Fixed)
+        self.assigned_table.setColumnWidth(3, 150)
+        assigned_header.setSectionResizeMode(4, QHeaderView.Fixed)
+        self.assigned_table.setColumnWidth(4, 90)
+        assigned_header.setSectionResizeMode(5, QHeaderView.Fixed)
+        self.assigned_table.setColumnWidth(5, 110)
 
         assignedCardLayout.addWidget(self.assigned_table)
 
@@ -509,28 +548,19 @@ class ExamQuestionsPage(QWidget):
         assignedBottomRow.addStretch()
 
         self.clear_all_button = QPushButton("🗑  Remove All Assigned Questions")
+        self.clear_all_button.setObjectName("dangerRemoveAllBtn")
         self.clear_all_button.setCursor(Qt.PointingHandCursor)
         self.clear_all_button.setMinimumHeight(38)
-        self.clear_all_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FEF2F2;
-                color: #DC2626;
-                border: 1px solid #FECACA;
-                border-radius: 8px;
-                padding: 6px 18px;
-                font-weight: 700;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background-color: #FEE2E2;
-                border-color: #DC2626;
-            }
-        """)
         self.clear_all_button.clicked.connect(self.remove_all_questions)
-        assignedBottomRow.addWidget(self.clear_all_button)
 
+        # Aliases
+        self.assigned_questions_table = self.assigned_table
+        self.remove_btn = self.clear_all_button
+        self.remove_all_btn = self.clear_all_button
+
+        assignedBottomRow.addWidget(self.clear_all_button)
         assignedCardLayout.addLayout(assignedBottomRow)
-        main_layout.addWidget(assignedCard)
+        main_layout.addWidget(self.card_assigned_questions)
 
         scroll.setWidget(container)
         root_layout.addWidget(scroll)
@@ -548,6 +578,25 @@ class ExamQuestionsPage(QWidget):
         is_dark = p.get("name") == "dark"
 
         if is_dark:
+            card_bg = "#1E293B"
+            card_border = "#334155"
+            text_main = "#F8FAFC"
+            text_muted = "#94A3B8"
+            input_bg = "#0F172A"
+            input_border = "#334155"
+            focus_color = "#6366F1"
+            combo_view_bg = "#1E293B"
+            combo_view_select = "#312E81"
+            table_bg = "#1E293B"
+            table_alt_bg = "#162032"
+            table_hover = "#243248"
+            table_select_bg = "#312E81"
+            table_select_fg = "#FFFFFF"
+            table_header_bg = "#0F172A"
+            table_header_fg = "#94A3B8"
+            table_border = "#334155"
+            table_line = "#273549"
+
             self.examPod.setStyleSheet("""
                 QFrame#examPod {
                     background-color: #1E293B;
@@ -629,100 +678,105 @@ class ExamQuestionsPage(QWidget):
                 }
             """)
 
-            self.category_combo.setStyleSheet("""
-                QComboBox {
-                    background-color: #0F172A;
-                    color: #F8FAFC;
-                    border: 1px solid #334155;
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    font-size: 13px;
-                    font-weight: 500;
-                }
-                QComboBox:hover {
-                    border-color: #64748B;
-                }
-                QComboBox:focus {
-                    border-color: #6366F1;
-                }
-                QComboBox::drop-down {
-                    subcontrol-origin: padding;
-                    subcontrol-position: top right;
-                    width: 28px;
-                    border-left: 1px solid #334155;
-                    border-top-right-radius: 8px;
-                    border-bottom-right-radius: 8px;
-                    background: #162032;
-                }
-                QComboBox QAbstractItemView, QComboBox QListView {
-                    background-color: #1E293B;
-                    color: #F8FAFC;
-                    selection-background-color: #312E81;
-                    selection-color: #FFFFFF;
-                    border: 1px solid #334155;
-                    border-radius: 8px;
-                    padding: 4px;
-                    outline: none;
-                }
-                QComboBox QAbstractItemView::item, QComboBox QListView::item {
-                    padding: 8px 12px;
-                    color: #F8FAFC;
-                    background-color: #1E293B;
-                    border-radius: 4px;
-                }
-                QComboBox QAbstractItemView::item:hover, QComboBox QListView::item:hover,
-                QComboBox QAbstractItemView::item:selected, QComboBox QListView::item:selected {
-                    background-color: #312E81;
-                    color: #FFFFFF;
-                }
-            """)
-
-            self.number_spin.setStyleSheet("""
-                QSpinBox {
-                    background-color: #0F172A;
-                    color: #F8FAFC;
-                    border: 1px solid #334155;
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    font-size: 13px;
-                }
-                QSpinBox:focus {
-                    border-color: #6366F1;
-                }
-            """)
-
+            # Buttons in dark
             self.auto_select_button.setStyleSheet("""
-                QPushButton {
+                QPushButton#primaryAutoSelectBtn {
                     background-color: #4F46E5;
                     color: #FFFFFF;
                     border: none;
                     border-radius: 8px;
-                    padding: 10px 18px;
+                    padding: 8px 18px;
                     font-weight: 700;
                     font-size: 13px;
                 }
-                QPushButton:hover {
+                QPushButton#primaryAutoSelectBtn:hover {
                     background-color: #4338CA;
                 }
-                QPushButton:pressed {
+                QPushButton#primaryAutoSelectBtn:pressed {
                     background-color: #3730A3;
                 }
             """)
 
-            self.search_available.setStyleSheet("""
-                QLineEdit {
+            self.assign_button.setStyleSheet("""
+                QPushButton#primaryAssignBtn {
+                    background-color: #064E3B;
+                    color: #34D399;
+                    border: 1px solid #059669;
                     border-radius: 8px;
-                    padding: 4px 12px;
-                    border: 1px solid #334155;
-                    background-color: #1E293B;
-                    color: #F8FAFC;
+                    padding: 8px 18px;
+                    font-weight: 700;
                     font-size: 12px;
                 }
-                QLineEdit:focus {
-                    border-color: #6366F1;
+                QPushButton#primaryAssignBtn:hover {
+                    background-color: #047857;
+                    color: #FFFFFF;
                 }
             """)
+
+            self.refresh_button.setStyleSheet("""
+                QPushButton#neutralRefreshBtn {
+                    background-color: #1E293B;
+                    color: #CBD5E1;
+                    border: 1px solid #334155;
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    font-weight: 600;
+                    font-size: 12px;
+                }
+                QPushButton#neutralRefreshBtn:hover {
+                    background-color: #334155;
+                    color: #FFFFFF;
+                }
+            """)
+
+            self.clear_all_button.setStyleSheet("""
+                QPushButton#dangerRemoveAllBtn {
+                    background-color: #881337;
+                    color: #FDA4AF;
+                    border: 1px solid #E11D48;
+                    border-radius: 8px;
+                    padding: 8px 18px;
+                    font-weight: 700;
+                    font-size: 12px;
+                }
+                QPushButton#dangerRemoveAllBtn:hover {
+                    background-color: #BE123C;
+                    color: #FFFFFF;
+                }
+            """)
+
+            self.assigned_count_label.setStyleSheet("""
+                QLabel#assignedCountBadge {
+                    background-color: #1E1B4B;
+                    color: #A5B4FC;
+                    border: 1px solid #4F46E5;
+                    border-radius: 12px;
+                    padding: 4px 14px;
+                    font-weight: 700;
+                    font-size: 11px;
+                }
+            """)
+
         else:
+            card_bg = "#FFFFFF"
+            card_border = "#E2E8F0"
+            text_main = "#0F172A"
+            text_muted = "#64748B"
+            input_bg = "#FFFFFF"
+            input_border = "#CBD5E1"
+            focus_color = "#2563EB"
+            combo_view_bg = "#FFFFFF"
+            combo_view_select = "#EFF6FF"
+            table_bg = "#FFFFFF"
+            table_alt_bg = "#F8FAFC"
+            table_hover = "#EFF6FF"
+            table_select_bg = "#DBEAFE"
+            table_select_fg = "#1E3A8A"
+            table_header_bg = "#F8FAFC"
+            table_header_fg = "#475569"
+            table_border = "#E2E8F0"
+            table_line = "#F1F5F9"
+
             self.examPod.setStyleSheet("""
                 QFrame#examPod {
                     background-color: #EEF2FF;
@@ -803,100 +857,220 @@ class ExamQuestionsPage(QWidget):
                 }
             """)
 
-            # Explicit styling for the QComboBox popup list view as instructed:
-            self.category_combo.setStyleSheet("""
-                QComboBox {
-                    background-color: #FFFFFF;
-                    color: #0F172A;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    font-size: 13px;
-                    font-weight: 500;
-                }
-                QComboBox:hover {
-                    border-color: #94A3B8;
-                }
-                QComboBox:focus {
-                    border-color: #2563EB;
-                }
-                QComboBox::drop-down {
-                    subcontrol-origin: padding;
-                    subcontrol-position: top right;
-                    width: 28px;
-                    border-left: 1px solid #E2E8F0;
-                    border-top-right-radius: 8px;
-                    border-bottom-right-radius: 8px;
-                    background: #F8FAFC;
-                }
-                QComboBox QAbstractItemView, QComboBox QListView {
-                    background-color: #FFFFFF;
-                    color: #0F172A;
-                    selection-background-color: #EFF6FF;
-                    selection-color: #2563EB;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 8px;
-                    padding: 4px;
-                    outline: none;
-                }
-                QComboBox QAbstractItemView::item, QComboBox QListView::item {
-                    padding: 8px 12px;
-                    color: #0F172A;
-                    background-color: #FFFFFF;
-                    border-radius: 4px;
-                }
-                QComboBox QAbstractItemView::item:hover, QComboBox QListView::item:hover,
-                QComboBox QAbstractItemView::item:selected, QComboBox QListView::item:selected {
-                    background-color: #EFF6FF;
-                    color: #2563EB;
-                }
-            """)
-
-            self.number_spin.setStyleSheet("""
-                QSpinBox {
-                    background-color: #FFFFFF;
-                    color: #0F172A;
-                    border: 1px solid #CBD5E1;
-                    border-radius: 8px;
-                    padding: 8px 12px;
-                    font-size: 13px;
-                }
-                QSpinBox:focus {
-                    border-color: #2563EB;
-                }
-            """)
-
+            # Buttons in light
             self.auto_select_button.setStyleSheet("""
-                QPushButton {
+                QPushButton#primaryAutoSelectBtn {
                     background-color: #2563EB;
                     color: #FFFFFF;
                     border: none;
                     border-radius: 8px;
-                    padding: 10px 18px;
+                    padding: 8px 18px;
                     font-weight: 700;
                     font-size: 13px;
                 }
-                QPushButton:hover {
+                QPushButton#primaryAutoSelectBtn:hover {
                     background-color: #1D4ED8;
                 }
-                QPushButton:pressed {
+                QPushButton#primaryAutoSelectBtn:pressed {
                     background-color: #1E40AF;
                 }
             """)
 
-            self.search_available.setStyleSheet("""
-                QLineEdit {
+            self.assign_button.setStyleSheet("""
+                QPushButton#primaryAssignBtn {
+                    background-color: #ECFDF5;
+                    color: #059669;
+                    border: 1px solid #A7F3D0;
                     border-radius: 8px;
-                    padding: 4px 12px;
-                    border: 1px solid #E2E8F0;
-                    background-color: #FFFFFF;
-                    color: #0F172A;
+                    padding: 8px 18px;
+                    font-weight: 700;
                     font-size: 12px;
                 }
-                QLineEdit:focus {
-                    border-color: #2563EB;
+                QPushButton#primaryAssignBtn:hover {
+                    background-color: #D1FAE5;
+                    border-color: #059669;
                 }
             """)
+
+            self.refresh_button.setStyleSheet("""
+                QPushButton#neutralRefreshBtn {
+                    background-color: #F8FAFC;
+                    color: #475569;
+                    border: 1px solid #CBD5E1;
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    font-weight: 600;
+                    font-size: 12px;
+                }
+                QPushButton#neutralRefreshBtn:hover {
+                    background-color: #F1F5F9;
+                    color: #0F172A;
+                    border-color: #94A3B8;
+                }
+            """)
+
+            self.clear_all_button.setStyleSheet("""
+                QPushButton#dangerRemoveAllBtn {
+                    background-color: #FEF2F2;
+                    color: #DC2626;
+                    border: 1px solid #FECACA;
+                    border-radius: 8px;
+                    padding: 8px 18px;
+                    font-weight: 700;
+                    font-size: 12px;
+                }
+                QPushButton#dangerRemoveAllBtn:hover {
+                    background-color: #FEE2E2;
+                    border-color: #DC2626;
+                }
+            """)
+
+            self.assigned_count_label.setStyleSheet("""
+                QLabel#assignedCountBadge {
+                    background-color: #EEF2FF;
+                    color: #4F46E5;
+                    border: 1px solid #C7D2FE;
+                    border-radius: 12px;
+                    padding: 4px 14px;
+                    font-weight: 700;
+                    font-size: 11px;
+                }
+            """)
+
+        # Style card containers
+        card_qss = f"""
+            background-color: {card_bg};
+            border: 1px solid {card_border};
+            border-radius: 12px;
+        """
+        self.headerCard.setStyleSheet(f"QFrame#card_header {{ {card_qss} }}")
+        self.card_auto_generation.setStyleSheet(f"QFrame#card_auto_generation {{ {card_qss} }}")
+        self.card_available_questions.setStyleSheet(f"QFrame#card_available_questions {{ {card_qss} }}")
+        self.card_assigned_questions.setStyleSheet(f"QFrame#card_assigned_questions {{ {card_qss} }}")
+
+        # Category combo styling
+        self.category_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {input_bg};
+                color: {text_main};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-size: 13px;
+                font-weight: 500;
+            }}
+            QComboBox:focus {{
+                border-color: {focus_color};
+            }}
+            QComboBox::drop-down {{
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
+                width: 28px;
+                border-left: 1px solid {card_border};
+                border-top-right-radius: 8px;
+                border-bottom-right-radius: 8px;
+                background-color: {card_bg};
+            }}
+            QComboBox::down-arrow {{
+                border-left: 4px solid transparent;
+                border-right: 4px solid transparent;
+                border-top: 5px solid {text_muted};
+                width: 0;
+                height: 0;
+            }}
+            QComboBox QAbstractItemView, QComboBox QListView {{
+                background-color: {combo_view_bg};
+                color: {text_main};
+                selection-background-color: {combo_view_select};
+                selection-color: {focus_color};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 4px;
+                outline: none;
+            }}
+            QComboBox QAbstractItemView::item, QComboBox QListView::item {{
+                padding: 6px 10px;
+                color: {text_main};
+                background-color: {combo_view_bg};
+                border-radius: 4px;
+                min-height: 24px;
+            }}
+            QComboBox QAbstractItemView::item:hover, QComboBox QAbstractItemView::item:selected,
+            QComboBox QListView::item:hover, QComboBox QListView::item:selected {{
+                background-color: {combo_view_select};
+                color: {focus_color};
+            }}
+        """)
+
+        # Spinbox styling
+        self.number_spin.setStyleSheet(f"""
+            QSpinBox {{
+                background-color: {input_bg};
+                color: {text_main};
+                border: 1px solid {input_border};
+                border-radius: 8px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }}
+            QSpinBox:focus {{
+                border-color: {focus_color};
+            }}
+        """)
+
+        # Search input styling
+        self.search_available.setStyleSheet(f"""
+            QLineEdit#searchAvailableInput {{
+                border-radius: 8px;
+                padding: 6px 14px;
+                border: 1px solid {input_border};
+                background-color: {input_bg};
+                color: {text_main};
+                font-size: 12px;
+            }}
+            QLineEdit#searchAvailableInput:focus {{
+                border-color: {focus_color};
+            }}
+        """)
+
+        # Table styling
+        table_qss = f"""
+            QTableWidget {{
+                background-color: {table_bg};
+                alternate-background-color: {table_alt_bg};
+                color: {text_main};
+                border: 1px solid {table_border};
+                border-radius: 10px;
+                gridline-color: transparent;
+                selection-background-color: {table_select_bg};
+                selection-color: {table_select_fg};
+                font-size: 13px;
+                outline: none;
+            }}
+            QTableWidget::item {{
+                padding: 8px 12px;
+                border-bottom: 1px solid {table_line};
+            }}
+            QTableWidget::item:selected {{
+                background-color: {table_select_bg};
+                color: {table_select_fg};
+            }}
+            QTableWidget::item:hover {{
+                background-color: {table_hover};
+            }}
+            QHeaderView::section {{
+                background-color: {table_header_bg};
+                color: {table_header_fg};
+                padding: 10px 14px;
+                border: none;
+                border-bottom: 1px solid {table_border};
+                font-weight: 700;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }}
+        """
+        self.available_table.setStyleSheet(table_qss)
+        self.assigned_table.setStyleSheet(table_qss)
 
     # ==========================================================
     # LOAD EXAMINATIONS
