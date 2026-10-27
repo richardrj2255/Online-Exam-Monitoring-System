@@ -32,6 +32,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 from models.question_model import QuestionModel
+from ui.pages.ai_importer import AIQuestionImportDialog, ImportDropZone
 from ui.theme_manager import get_theme_palette, register_theme_listener
 
 
@@ -321,6 +322,89 @@ class QuestionsPage(QWidget):
 
         main_layout.addWidget(self.card_metrics)
 
+        # PDF/CSV import is staged in its own dialog; manual authoring below is untouched.
+        self.card_bulk_import = QFrame()
+        self.card_bulk_import.setObjectName("card_bulk_import")
+        bulk_layout = QVBoxLayout(self.card_bulk_import)
+        bulk_layout.setContentsMargins(18, 14, 18, 14)
+        bulk_layout.setSpacing(10)
+
+        bulk_header = QHBoxLayout()
+        bulk_icon = QLabel("📁")
+        bulk_icon.setObjectName("bulkImportIcon")
+        bulk_icon.setAlignment(Qt.AlignCenter)
+        bulk_icon.setFixedSize(30, 30)
+        bulk_heading = QVBoxLayout()
+        bulk_heading.setSpacing(1)
+        self.bulk_title = QLabel("Import Questions from PDF or CSV")
+        self.bulk_title.setObjectName("bulkImportTitle")
+        self.bulk_title.setFont(QFont("Segoe UI", 11, QFont.Bold))
+        self.bulk_subtitle = QLabel("Quickly extract questions from your PDF or CSV files and add them to the question bank.")
+        self.bulk_subtitle.setObjectName("bulkImportSubtitle")
+        bulk_heading.addWidget(self.bulk_title)
+        bulk_heading.addWidget(self.bulk_subtitle)
+        bulk_header.addWidget(bulk_icon)
+        bulk_header.addLayout(bulk_heading)
+        bulk_header.addStretch()
+        bulk_layout.addLayout(bulk_header)
+
+        file_panels = QHBoxLayout()
+        file_panels.setSpacing(14)
+        for suffix, icon, description, guide_title, guide_lines, size in (
+            ("pdf", "📕", "Upload a PDF file containing questions. Gemini will extract MCQs.",
+             "Supported PDF Format", ("MCQ format (A, B, C, D options)", "Questions with answers", "Multiple pages supported"), "10MB"),
+            ("csv", "📗", "Upload a CSV file with questions, options, and answers.",
+             "CSV Format Guide", ("Question and Option A, B, C, D", "Answer (A/B/C/D), Marks", "Header row required"), "5MB"),
+        ):
+            panel = QFrame()
+            panel.setObjectName("bulkImportPanel")
+            panel_layout = QVBoxLayout(panel)
+            panel_layout.setContentsMargins(12, 10, 12, 10)
+            panel_layout.setSpacing(7)
+            panel_heading = QHBoxLayout()
+            panel_icon = QLabel(icon)
+            panel_icon.setFixedSize(34, 34)
+            panel_icon.setAlignment(Qt.AlignCenter)
+            panel_icon.setObjectName("bulkPanelIcon")
+            title_stack = QVBoxLayout()
+            title_stack.setSpacing(1)
+            panel_title = QLabel(f"Import from {suffix.upper()}")
+            panel_title.setObjectName("bulkPanelTitle")
+            panel_title.setFont(QFont("Segoe UI", 10, QFont.Bold))
+            panel_desc = QLabel(description)
+            panel_desc.setObjectName("bulkPanelMuted")
+            panel_desc.setWordWrap(True)
+            title_stack.addWidget(panel_title)
+            title_stack.addWidget(panel_desc)
+            panel_heading.addWidget(panel_icon)
+            panel_heading.addLayout(title_stack)
+            panel_layout.addLayout(panel_heading)
+            panel_content = QHBoxLayout()
+            drop_zone = ImportDropZone(suffix)
+            drop_zone.fileChosen.connect(self.open_import_dialog)
+            panel_content.addWidget(drop_zone, 3)
+            guide = QFrame()
+            guide.setObjectName("bulkImportGuide")
+            guide_layout = QVBoxLayout(guide)
+            guide_layout.setContentsMargins(10, 7, 10, 7)
+            guide_layout.setSpacing(4)
+            guide_label = QLabel(guide_title)
+            guide_label.setObjectName("bulkPanelTitle")
+            guide_layout.addWidget(guide_label)
+            for line in guide_lines:
+                item = QLabel("✓  " + line)
+                item.setObjectName("bulkPanelMuted")
+                item.setWordWrap(True)
+                guide_layout.addWidget(item)
+            panel_content.addWidget(guide, 2)
+            panel_layout.addLayout(panel_content)
+            footer = QLabel(f"Supported: {suffix.upper()} (max {size})")
+            footer.setObjectName("bulkPanelMuted")
+            panel_layout.addWidget(footer)
+            file_panels.addWidget(panel, 1)
+        bulk_layout.addLayout(file_panels)
+        main_layout.addWidget(self.card_bulk_import)
+
         # ======================================================
         # 3. QUESTION AUTHORING & CONFIGURATION FORM CARD (QFrame#card_form)
         # ======================================================
@@ -587,6 +671,12 @@ class QuestionsPage(QWidget):
 
         repoHeaderRow.addWidget(repoTitle)
         repoHeaderRow.addStretch()
+        self.import_questions_button = QPushButton("📁 Import Questions (PDF / CSV)")
+        self.import_questions_button.setObjectName("importQuestionsBtn")
+        self.import_questions_button.setMinimumHeight(38)
+        self.import_questions_button.setCursor(Qt.PointingHandCursor)
+        self.import_questions_button.clicked.connect(self.open_import_dialog)
+        repoHeaderRow.addWidget(self.import_questions_button)
         repoHeaderRow.addWidget(self.search_input)
         repoCardLayout.addLayout(repoHeaderRow)
 
@@ -814,6 +904,23 @@ class QuestionsPage(QWidget):
         self.card_metrics.setStyleSheet(f"QFrame#card_metrics {{ {card_style} }}")
         self.card_form.setStyleSheet(f"QFrame#card_form {{ {card_style} }}")
         self.card_table.setStyleSheet(f"QFrame#card_table {{ {card_style} }}")
+        self.card_bulk_import.setStyleSheet(f"""
+            QFrame#card_bulk_import {{ {card_style} }}
+            QFrame#bulkImportPanel {{ background: {card_bg}; border: 1px solid {card_border}; border-radius: 9px; }}
+            QFrame#bulkImportGuide {{ background: {canvas_bg}; border: 1px solid {card_border}; border-radius: 7px; }}
+            QFrame#bulkDropZone {{ background: {card_bg}; border: 1px dashed #A5B4FC; border-radius: 7px; }}
+            QLabel#bulkImportTitle, QLabel#bulkPanelTitle {{ color: {text_main}; border: none; background: transparent; font-weight: 700; }}
+            QLabel#bulkImportSubtitle, QLabel#bulkPanelMuted {{ color: {text_muted}; border: none; background: transparent; font-size: 11px; }}
+            QLabel#bulkImportIcon {{ background: #4F46E5; color: white; border-radius: 6px; }}
+            QLabel#bulkPanelIcon {{ background: {canvas_bg}; border-radius: 7px; }}
+            QPushButton#dropChooseFile {{ background: {card_bg}; color: #2563EB; border: 1px solid #2563EB;
+                border-radius: 6px; padding: 5px; font-weight: 600; }}
+        """)
+        self.import_questions_button.setStyleSheet("""
+            QPushButton#importQuestionsBtn { background: #EFF6FF; color: #2563EB;
+                border: 1px solid #93C5FD; border-radius: 8px; padding: 7px 12px; font-weight: 700; }
+            QPushButton#importQuestionsBtn:hover { background: #DBEAFE; }
+        """)
 
         # Style Question prompt text area
         self.question_input.setStyleSheet(f"""
@@ -1140,6 +1247,25 @@ class QuestionsPage(QWidget):
     def refresh_all(self):
         self.load_categories()
         self.load_questions()
+
+    def open_import_dialog(self, path=None):
+        """Open the isolated staging flow and refresh only after a successful commit."""
+        if isinstance(path, bool):  # QPushButton.clicked sends a checked flag.
+            path = None
+        dialog = AIQuestionImportDialog(
+            self,
+            initial_path=path,
+            category_id=self.category_combo.currentData(),
+        )
+        dialog.exec_()
+        if dialog.import_result:
+            count, category_name = dialog.import_result
+            self.load_questions()
+            QMessageBox.information(
+                self,
+                "Questions Imported",
+                f"Successfully imported {count} questions into {category_name}",
+            )
 
     # ==========================================================
     # SEARCH FILTER

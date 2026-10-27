@@ -11,8 +11,8 @@ from PyQt5.QtWidgets import (
     QFrame,
     QMessageBox
 )
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QIntValidator, QRegExpValidator
+from PyQt5.QtCore import Qt, QRegExp
 
 from models.student_model import StudentModel
 
@@ -78,12 +78,18 @@ class AddStudentDialog(QDialog):
 
         self.sem = QLineEdit()
         self.sem.setPlaceholderText("Semester (e.g. 6)")
+        self.sem.setValidator(QIntValidator(1, 8, self))
 
         self.hall = QLineEdit()
         self.hall.setPlaceholderText("Exam Hall / Laboratory")
 
         self.seat = QLineEdit()
         self.seat.setPlaceholderText("Seat Number")
+        self.seat.setValidator(QRegExpValidator(QRegExp("^[0-9]+$"), self))
+
+        # Widget handles / aliases
+        self.semester_input = self.sem
+        self.seat_number_input = self.seat
 
         for field in [self.reg, self.name, self.dept, self.sem, self.hall, self.seat]:
             field.setMinimumHeight(40)
@@ -98,12 +104,14 @@ class AddStudentDialog(QDialog):
 
         self.photoLabel = QLabel("No Biometric Photo Enrolled")
         self.photoLabel.setObjectName("pageSubtitle")
+        self.photo_label = self.photoLabel
 
         browse = QPushButton("📷 Choose Photo")
         browse.setObjectName("secondaryBtn")
         browse.setCursor(Qt.PointingHandCursor)
         browse.setMinimumHeight(34)
         browse.clicked.connect(self.choose_photo)
+        self.btn_upload_photo = browse
 
         photoLayout.addWidget(self.photoLabel, 1)
         photoLayout.addWidget(browse)
@@ -117,6 +125,7 @@ class AddStudentDialog(QDialog):
         else:
             self.saveBtn = QPushButton("Save & Enroll Examinee")
 
+        self.btn_save = self.saveBtn
         self.saveBtn.setCursor(Qt.PointingHandCursor)
         self.saveBtn.setMinimumHeight(44)
         self.saveBtn.setFont(QFont("Segoe UI", 12, QFont.Bold))
@@ -175,6 +184,15 @@ class AddStudentDialog(QDialog):
                 self,
                 "Validation Error",
                 "Register Number and Student Name are mandatory fields."
+            )
+            return
+
+        if not self.photo_path or not str(self.photo_path).strip() or self.photo_path == "No Biometric Photo Enrolled":
+
+            QMessageBox.warning(
+                self,
+                "Biometric Photo Required",
+                "Student photo is compulsory for biometric proctoring. Please upload a clear student photo before saving."
             )
             return
 

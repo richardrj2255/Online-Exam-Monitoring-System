@@ -34,6 +34,7 @@ from PyQt5.QtCore import (
 )
 
 from models.question_model import QuestionModel
+from models.assignment_model import AssignmentModel
 from ai.ai_monitoring import ExamAIMonitor
 from streaming.camera_stream import CameraStreamer
 
@@ -356,12 +357,20 @@ class MonitoringPage(QWidget):
         # =====================================================
         try:
             duration = self.exam.get("duration", 60) if hasattr(self.exam, "get") else self.exam["duration"]
+            if isinstance(duration, str) and not duration.isdigit():
+                import re
+                m = re.search(r'\d+', duration)
+                duration = m.group() if m else 60
             self.remaining_seconds = int(duration or 60) * 60
         except Exception:
             self.remaining_seconds = 3600
 
         self.examTimer = QTimer()
         self.examTimer.timeout.connect(self.update_countdown)
+        self.examStatusTimer = QTimer(self)
+        self.examStatusTimer.timeout.connect(self.check_admin_exam_status)
+        self._closed_by_admin = False
+        self._status_check_error_logged = False
 
         # =====================================================
         # LOAD QUESTIONS & BUILD UI
@@ -376,6 +385,7 @@ class MonitoringPage(QWidget):
         self.camera_streamer.start()
         self.start_ai_monitoring()
         self.examTimer.start(1000)
+        self.examStatusTimer.start(1000)
 
         # =====================================================
         # SHOW FIRST QUESTION
@@ -1713,6 +1723,8 @@ class MonitoringPage(QWidget):
 
     def update_countdown(self):
         if self.remaining_seconds <= 0:
+            if self.check_admin_exam_status():
+                return
             self.examTimer.stop()
             self.headerTimeLabel.setText("00:00")
             self.submit_exam(automatic=True)
@@ -1725,6 +1737,8 @@ class MonitoringPage(QWidget):
     # SUBMIT EXAM (Modern Confirmation Modal + Backend Submission)
     # =========================================================
     def submit_exam(self, automatic=False):
+        if self.check_admin_exam_status():
+            return
         self.save_current_answer()
 
         if automatic:
@@ -1755,6 +1769,8 @@ class MonitoringPage(QWidget):
         if self.attempt_id is not None:
             score = QuestionModel.submit_exam_attempt(self.attempt_id)
             if score is None:
+                if self.check_admin_exam_status():
+                    return
                 QMessageBox.warning(
                     self,
                     "Submission Error",
@@ -1778,6 +1794,31 @@ class MonitoringPage(QWidget):
             "Your examination has been submitted successfully."
         )
         self.close()
+
+    def check_admin_exam_status(self):
+        """Close an open student exam when the administrator completes it."""
+        if self._closed_by_admin:
+            return True
+        exam_id = self.exam.get("id") if hasattr(self.exam, "get") else self.exam["id"]
+        try:
+            status = AssignmentModel.get_exam_status(exam_id)
+        except Exception as error:
+            if not self._status_check_error_logged:
+                print(">>> Student exam status check error:", error)
+                self._status_check_error_logged = True
+            return False
+        self._status_check_error_logged = False
+        if status != "Completed":
+            return False
+        self._closed_by_admin = True
+        self.close()
+        QMessageBox.information(
+            None,
+            "Examination Ended",
+            "The administrator has ended this examination. "
+            "Your saved answers were submitted automatically.",
+        )
+        return True
 
     # =========================================================
     # CAMERA (PRESERVED BACKEND LOGIC)
@@ -1977,8 +2018,12 @@ class MonitoringPage(QWidget):
     # CLOSE EVENT (PRESERVED CLEANUP LOGIC)
     # =========================================================
     def closeEvent(self, event):
+        if self.attempt_id is None:
+            event.accept()
+            return
         self.cameraTimer.stop()
         self.examTimer.stop()
+        self.examStatusTimer.stop()
         self.stop_ai_monitoring()
         self.camera_streamer.stop()
 

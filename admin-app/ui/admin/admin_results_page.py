@@ -322,6 +322,8 @@ class AdminResultsPage(QWidget):
             # Status pill badge in column 8
             if status_str.upper() == "SUBMITTED":
                 badge = create_badge_widget("SUBMITTED", "success")
+            elif status_str.upper() == "AUTO_SUBMITTED":
+                badge = create_badge_widget("AUTO SUBMITTED", "success")
             elif status_str.upper() == "IN_PROGRESS":
                 badge = create_badge_widget("IN PROGRESS", "amber")
             else:
@@ -387,13 +389,16 @@ class AdminResultsPage(QWidget):
 
         results = self.all_results
         total = len(results)
-        submitted = sum(1 for result in results if result["status"] == "SUBMITTED")
+        submitted = sum(
+            1 for result in results
+            if result["status"] in ("SUBMITTED", "AUTO_SUBMITTED")
+        )
         in_progress = sum(1 for result in results if result["status"] == "IN_PROGRESS")
 
         scores = [
             float(result["score"] or 0)
             for result in results
-            if result["status"] == "SUBMITTED"
+            if result["status"] in ("SUBMITTED", "AUTO_SUBMITTED")
         ]
 
         if scores:

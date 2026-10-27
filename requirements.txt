@@ -56,6 +56,12 @@ pyyaml>=5.0.0
 numpy>=1.20.0
 flask>=2.0.0
 
+# Admin PDF/CSV question import
+PyQt5>=5.15.0
+pypdf>=4.0.0
+google-generativeai>=0.8.0
+protobuf<5  # Preserve compatibility with existing monitoring libraries
+
 # Platform-Specific Dependencies
 pywin32>=300; sys_platform == 'win32'
 dbus-python>=1.3.2; sys_platform == 'linux'
